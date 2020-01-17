@@ -24,6 +24,7 @@ import time
 # from QLabeledValue import *
 from leica_ros.msg import *
 from std_msgs.msg import *
+from std_srvs.srv import *
 from geometry_msgs.msg import *
 
 import message_filters
@@ -165,6 +166,24 @@ class PrismMonitorWidget(QWidget):
     Current_P = prism_tf()
     counter = 0
 
+    availablePrisms = [
+        {
+            "name" : "big_360",
+            "num"  : 3,
+            "constant" : 34.4
+        },
+        {
+            "name" : "mini_360",
+            "num"  : 7,
+            "constant" : 30.0 
+        },
+        {
+            "name" : "mini_lp",
+            "num"  : 1,
+            "constant" :  17.5
+        }
+    ]
+
     def __init__(self,parent = None):
         self.counter = 0
         self.Current_P = prism_tf()
@@ -174,11 +193,21 @@ class PrismMonitorWidget(QWidget):
         #Prism 1
         self.counter =1
         self.check = True
-        prismLayout = QVBoxLayout()
+        prismLayout = QHBoxLayout()
         self.controlGroup = QGroupBox('Prism Left Lower Gate') 
+
         self.prismG1 = QPushButton('Calculate')
         self.prismG1.clicked.connect(self.prismG1_onclick) 
         prismLayout.addWidget(self.prismG1)
+
+        self.prismG1toggle = QPushButton('Toggle')
+        self.prismG1toggle.clicked.connect(self.prismG1toggle_onclick) 
+        prismLayout.addWidget(self.prismG1toggle)
+
+        self.prismG1name = "mini_lp"
+        self.prismG1namelabel = QLabel(self.prismG1name) 
+        prismLayout.addWidget(self.prismG1namelabel)
+
         self.controlGroup.setLayout(prismLayout)
         layout.addWidget(self.controlGroup)
 
@@ -238,6 +267,19 @@ class PrismMonitorWidget(QWidget):
         layout.addWidget(self.btnQuit)
 
         self.setLayout(layout)
+
+        # stop Leica tracking
+        rospy.wait_for_service('leica_node/stop_tracking')
+        stop_tracking_svc = rospy.ServiceProxy('leica_node/stop_tracking', SetBool)
+        try:
+            rospy.loginfo("Stopping tracking")
+            stop_tracking_req = SetBoolRequest()
+            stop_tracking_req.data = False
+            stop_tracking_resp = stop_tracking_svc(stop_tracking_req)
+            rospy.loginfo("StopTrackingResponse: %s",stop_tracking_resp.__str__())
+        except rospy.ServiceException as e:
+            print "Service call failed: %s"%e
+            return 
     
     def minCal1(self,pos,ang):
 
@@ -392,6 +434,17 @@ class PrismMonitorWidget(QWidget):
            
             print(min2)
 
+    def prismG1toggle_onclick(self):
+        current_idx = next((i for i in range(len(self.availablePrisms)) if self.availablePrisms[i]["name"]==self.prismG1name),None)
+        if current_idx is None:
+            rospy.logwarn("The current prism name is invalid")
+            return
+        next_idx = current_idx+1
+        if next_idx >= len(self.availablePrisms):
+            next_idx = 0
+        self.prismG1name = self.availablePrisms[next_idx]["name"]
+        self.prismG1namelabel.setText(self.prismG1name)
+
     def prismG1_onclick(self):
 
 
@@ -400,6 +453,31 @@ class PrismMonitorWidget(QWidget):
         global V2
         pr = []
         tf_listener = tf.TransformListener()
+
+        # set prism type in Leica to that which is currently displayed in the GUI
+        rospy.wait_for_service('leica_node/set_prism_type')
+        set_prism_type_svc = rospy.ServiceProxy('leica_node/set_prism_type', SetPrismType)
+        try:
+            rospy.loginfo("Setting to prism: %s",self.prismG1name)
+            set_prism_type_req = SetPrismTypeRequest()
+            set_prism_type_req.name = self.prismG1name
+            set_prism_type_resp = set_prism_type_svc(set_prism_type_req)
+        except rospy.ServiceException as e:
+            print "Service call failed: %s"%e
+            return 
+
+        # start Leica tracking
+        rospy.wait_for_service('leica_node/start_tracking')
+        start_tracking_svc = rospy.ServiceProxy('leica_node/start_tracking', StartTracking)
+        try:
+            rospy.loginfo("Starting tracking")
+            start_tracking_resp = start_tracking_svc()
+            rospy.loginfo("StartTrackingResponse: %s",start_tracking_resp.__str__())
+        except rospy.ServiceException as e:
+            print "Service call failed: %s"%e
+            return 
+
+        # get tf between Leica and prism 
         rospy.wait_for_service('prismTransform')
         try: 
             rospy.loginfo('\nPrism:transformations from leica_home are')
@@ -409,27 +487,42 @@ class PrismMonitorWidget(QWidget):
             #if(self)
             self.Current_P.ang=resp.ang
             self.Current_P.ang=resp.pos 
-            global count
-            if(count==1):
-                P1.ang = resp.ang
-                P1.pos = resp.pos
-                for i in P1.pos:
-                    pr.append(i)
-                pr.append(1)
-                V2.append(pr)
-                self.minCal1(P1.pos,P1.ang)
-                print("Prism no.:",count)
-                print("*********** Leica->Left Bottom Gate Prism***********")
-                print(P1.pos)
-                print(P1.ang)
-                print("***********************************************")
-                
-                print('\n')
-            if(count<=6):
-                count = count +1
-            self.prismG1.setEnabled(False)
+            # global count
+            # if(count==1):
+            P1.ang = resp.ang
+            P1.pos = resp.pos
+            for i in P1.pos:
+                pr.append(i)
+            pr.append(1)
+            V2.append(pr)
+            self.minCal1(P1.pos,P1.ang)
+            print("Prism no.:",count)
+            print("*********** Leica->Left Bottom Gate Prism***********")
+            print(P1.pos)
+            print(P1.ang)
+            print("***********************************************")
+            
+            print('\n')
+            # if(count<=6):
+            #     count = count +1
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
+            return 
+
+        # stop Leica tracking
+        rospy.wait_for_service('leica_node/stop_tracking')
+        stop_tracking_svc = rospy.ServiceProxy('leica_node/stop_tracking', SetBool)
+        try:
+            rospy.loginfo("Stopping tracking")
+            stop_tracking_req = SetBoolRequest()
+            stop_tracking_req.data = False
+            stop_tracking_resp = stop_tracking_svc(stop_tracking_req)
+            rospy.loginfo("StopTrackingResponse: %s",stop_tracking_resp.__str__())
+        except rospy.ServiceException as e:
+            print "Service call failed: %s"%e
+            return 
+            
+        self.prismG1.setEnabled(False)
 
     def prismG2_onclick(self):
         global V2
@@ -445,26 +538,26 @@ class PrismMonitorWidget(QWidget):
             #if(self)
             self.Current_P.ang=resp.ang
             self.Current_P.ang=resp.pos 
-            global count
-            if(count==2):
-                P2.ang = resp.ang
-                P2.pos = resp.pos
-                for i in P2.pos:
-                    pr.append(i)
-                pr.append(1)
-                V2.append(pr)
-                self.minCal1(P2.pos,P2.ang)
-                print("Prism no.:",count)
-                print("*********** Leica->Top Gate Prism***********")
-                print(P2.pos)
-                print(P2.ang)
-                print("***********************************************")
-                print('\n')
-            if(count<=6):
-                count = count +1
-            self.prismG2.setEnabled(False)
+            # global count
+            # if(count==2):
+            P2.ang = resp.ang
+            P2.pos = resp.pos
+            for i in P2.pos:
+                pr.append(i)
+            pr.append(1)
+            V2.append(pr)
+            self.minCal1(P2.pos,P2.ang)
+            print("Prism no.:",count)
+            print("*********** Leica->Top Gate Prism***********")
+            print(P2.pos)
+            print(P2.ang)
+            print("***********************************************")
+            print('\n')
+            # if(count<=6):
+            #     count = count +1
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
+        self.prismG2.setEnabled(False)
 
     def prismG3_onclick(self):
         global V2
@@ -480,27 +573,27 @@ class PrismMonitorWidget(QWidget):
             #if(self)
             self.Current_P.ang=resp.ang
             self.Current_P.ang=resp.pos 
-            global count
-            if(count==3):
-                P3.ang = resp.ang
-                P3.pos = resp.pos
-                print("Prism no.:",count)
-                print("*********** Leica->Right Bottom Gate***********")
-                print(P3.pos)
-                print(P3.ang)
-                print("***********************************************")
+            # global count
+            # if(count==3):
+            P3.ang = resp.ang
+            P3.pos = resp.pos
+            print("Prism no.:",count)
+            print("*********** Leica->Right Bottom Gate***********")
+            print(P3.pos)
+            print(P3.ang)
+            print("***********************************************")
 
-                for i in P3.pos:
-                    pr.append(i)
-                pr.append(1)
-                V2.append(pr)
-                self.minCal1(P3.pos,P3.ang)  # Calulates the solution to the rotation error between the TF World->Gate_prism and TF of Leica->Gate_Prism
+            for i in P3.pos:
+                pr.append(i)
+            pr.append(1)
+            V2.append(pr)
+            self.minCal1(P3.pos,P3.ang)  # Calulates the solution to the rotation error between the TF World->Gate_prism and TF of Leica->Gate_Prism
                 
-            if(count<=6):
-                count = count +1
-            self.prismG3.setEnabled(False)
+            # if(count<=6):
+            #     count = count +1
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
+        self.prismG3.setEnabled(False)
 
     def prismR1_onclick(self):
         global V4
@@ -516,29 +609,29 @@ class PrismMonitorWidget(QWidget):
             #if(self)
             self.Current_P.ang=resp.ang
             self.Current_P.ang=resp.pos 
-            global count
-            if(count==4):
-                P4.ang = resp.ang # Storage in anothe variable incase of flexibility with data if needed 
-                P4.pos = resp.pos
-                for i in P4.pos:
-                    pr.append(i)
-                pr.append(1)
-                V4.append(pr)
-                self.minCal2(P4.pos,P4.ang)
-                print("Prism no.:",count)
-                print("***********Leica->Left Robot Prism***********")
-                print(P4.pos)
-                print(P4.ang)
-                print("***********************************************")
-                
-                print('\n')
-            if(count<=6):
-                count = count +1
-            self.prismR1.setEnabled(False)
+            # global count
+            # if(count==4):
+            P4.ang = resp.ang # Storage in anothe variable incase of flexibility with data if needed 
+            P4.pos = resp.pos
+            for i in P4.pos:
+                pr.append(i)
+            pr.append(1)
+            V4.append(pr)
+            self.minCal2(P4.pos,P4.ang)
+            print("Prism no.:",count)
+            print("***********Leica->Left Robot Prism***********")
+            print(P4.pos)
+            print(P4.ang)
+            print("***********************************************")
+            
+            print('\n')
+            # if(count<=6):
+            #     count = count +1
 
             
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
+        self.prismR1.setEnabled(False)
 
     def prismR2_onclick(self):
         
@@ -555,27 +648,27 @@ class PrismMonitorWidget(QWidget):
             #if(self)
             self.Current_P.ang=resp.ang
             self.Current_P.ang=resp.pos 
-            global count
-            if(count==5):
-                P5.ang = resp.ang
-                P5.pos = resp.pos
-                for i in P5.pos:
-                    pr.append(i)
-                pr.append(1)
-                V4.append(pr)
-                self.minCal2(P5.pos,P5.ang)
-                print("Prism no.:",count)
-                print("***********Leica -> Top Right Prism***********")
-                print(P5.pos)
-                print(P5.ang)
-                print("***********************************************")
-                
-                print('\n')
-            if(count<=6):
-                count = count +1
-            self.prismR2.setEnabled(False)
+            # global count
+            # if(count==5):
+            P5.ang = resp.ang
+            P5.pos = resp.pos
+            for i in P5.pos:
+                pr.append(i)
+            pr.append(1)
+            V4.append(pr)
+            self.minCal2(P5.pos,P5.ang)
+            print("Prism no.:",count)
+            print("***********Leica -> Top Right Prism***********")
+            print(P5.pos)
+            print(P5.ang)
+            print("***********************************************")
+            
+            print('\n')
+            # if(count<=6):
+            #     count = count +1
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
+        self.prismR2.setEnabled(False)
 
     def prismR3_onclick(self):
         global V4
@@ -591,34 +684,32 @@ class PrismMonitorWidget(QWidget):
             #if(self)
             self.Current_P.ang=resp.ang
             self.Current_P.ang=resp.pos 
-            global count
-            if(count==6):
-                P6.ang = resp.ang
-                P6.pos = resp.pos
+            # global count
+            # if(count==6):
+            P6.ang = resp.ang
+            P6.pos = resp.pos
 
-                print("Prism no.:",count)
-                print("***********Leica->Right Bottom Prism***********")
-                print(P6.pos)
-                print(P6.ang)
+            print("Prism no.:",count)
+            print("***********Leica->Right Bottom Prism***********")
+            print(P6.pos)
+            print(P6.ang)
 
-                for i in P6.pos:
-                    pr.append(i)
-                pr.append(1)
+            for i in P6.pos:
+                pr.append(i)
+            pr.append(1)
 
-                V4.append(pr)
-                self.minCal2(P6.pos,P6.ang) # Calulates the solution to the rotation error between the TF Base_link->Robot_prism and TF of Leica->Robot_Prism
+            V4.append(pr)
+            self.minCal2(P6.pos,P6.ang) # Calulates the solution to the rotation error between the TF Base_link->Robot_prism and TF of Leica->Robot_Prism
                 
-                
-                
-            if(count<=6):
-                count = count +1
-            self.prismR3.setEnabled(False)
-            if(count>6):
-                print("Prism Count limit reached")
-                count = 0        
-                self.World_Robot_Origin()         
+            # if(count<=6):
+            #     count = count +1
+            # if(count>6):
+            #     print("Prism Count limit reached")
+            #     count = 0        
+            # self.World_Robot_Origin()         
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
+        self.prismR3.setEnabled(False)
 
     def btnQuit_onclick(self):
         self.parent().close()
