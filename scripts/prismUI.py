@@ -35,6 +35,8 @@ from ltf.srv import gettf
 from ltf.srv import gettfRequest
 from ltf.srv import gettfResponse
 
+import threading
+
 def normalize_quaternion(rot):
     ratio = math.sqrt(rot[0]**2 + rot[1]**2 + rot[2]**2 + rot[3]**2)
     return (rot[0]/ratio, rot[1]/ratio, rot[2]/ratio, rot[3]/ratio)
@@ -280,6 +282,10 @@ class PrismMonitorWidget(QWidget):
         except rospy.ServiceException as e:
             print "Service call failed: %s"%e
             return 
+
+        # launch publisher thread
+        self.pub_thread = threading.Thread(target=self.pubTF, args=())
+        self.pub_thread.start()
     
     def minCal1(self,pos,ang):
 
@@ -522,6 +528,7 @@ class PrismMonitorWidget(QWidget):
             print "Service call failed: %s"%e
             return 
             
+        # disable calculate button    
         self.prismG1.setEnabled(False)
 
     def prismG2_onclick(self):
@@ -712,10 +719,14 @@ class PrismMonitorWidget(QWidget):
         self.prismR3.setEnabled(False)
 
     def btnQuit_onclick(self):
+        self.pub_thread.join()
         self.parent().close()
 
-    def World_Robot_Origin(self):   #Robot_origin->World Publisher
-        global min1,min2        
+    def pubTF(self):   #Robot_origin->World Publisher
+        global min1,min2,V2,V4 
+
+        while len(V2)<3 and len(V4)<3 and not rospy.is_shutdown():
+            time.sleep(1)
 
         print("printing min1")
         print(min1)
@@ -756,7 +767,7 @@ class PrismMonitorWidget(QWidget):
         print("World with Respect to Robot")
         print(mat)
 
-        while(not rospy.is_shutdown()):
+        while not rospy.is_shutdown():
             LeicaBroadcaster  = tf.TransformBroadcaster()
             current_time = rospy.Time.now()
             LeicaBroadcaster.sendTransform(
