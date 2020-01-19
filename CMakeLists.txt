@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   std_srvs
   actionlib_msgs
+  geometry_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -63,7 +64,7 @@ find_package(catkin REQUIRED COMPONENTS
  add_service_files(
    FILES
    gettf.srv
-   StartTracking.srv   
+   SetTF.srv 
  )
 
 ## Generate actions in the 'action' folder
@@ -79,6 +80,7 @@ find_package(catkin REQUIRED COMPONENTS
    std_srvs
    actionlib_msgs
    std_msgs  # Or other packages containing msgs
+   geometry_msgs
  )
 
 ################################################
