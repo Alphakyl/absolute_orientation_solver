@@ -39,31 +39,49 @@ robot_ns = "A99"
 child_frame_id = "gate_leica"
 parent_frame_id = "body_aligned_imu_link"
 
+# test gate to robot
 # Vgp1 = [0.0,1.523 , 1.07]
 # Vgp2 = [0.0, 0.0, 1.83]
 # Vgp3 = [0.0, -1.394, 0.755]
+
+# robot to robot
 Vgp1 = [-0.045, 0.100025, 0.0174602]
 Vgp2 = [0.045, -0.100025, 0.0174602]
 Vgp3 = [-0.045, -0.100025, 0.0174602]
-Vgp = [Vgp1,Vgp2,Vgp3]
 
 Vrq1 = [-0.045, 0.100025, 0.0174602]
 Vrq2 = [0.045, -0.100025, 0.0174602]
 Vrq3 = [-0.045, -0.100025, 0.0174602]
-Vrq = [Vrq1,Vrq2,Vrq3]
 
-Vlp = []
-Vlq = []
+Vgp = [Vgp1,Vgp2,Vgp3]
+Vrq = [Vrq1,Vrq2,Vrq3]
+Vlp = [[None]*3 for i in range(3)]
+Vlq = [[None]*3 for i in range(3)]
 
 def cost_fun(x,v1,v2):
+    v1 = map(list, zip(*v1))
+    v2 = map(list, zip(*v2))
+    # print v1
+    # print v2
     t_mat = tf.transformations.translation_matrix(np.array([x[0],x[1],x[2]]))
     q_mat = tf.transformations.quaternion_matrix(normalize_quaternion(np.array([x[3], x[4], x[5],x[6]])))
     mat = np.dot(t_mat, q_mat)
+    err_mat = v1-np.dot(mat,v2)
+    # print err_mat
+    err_norm = LA.norm(err_mat[:,0])+LA.norm(err_mat[:,1])+LA.norm(err_mat[:,2])   
+    return err_norm
+
+def cost_funz(x,v1,v2):
+    v1 = map(list, zip(*v1))
+    v2 = map(list, zip(*v2))
     # print v1
     # print v2
-    # print mat
+    t_mat = tf.transformations.translation_matrix(np.array([x[0],x[1],x[2]]))
+    q_mat = tf.transformations.quaternion_matrix(normalize_quaternion(np.array([0, 0, x[3], 1-x[3]*x[3]])))
+    mat = np.dot(t_mat, q_mat)
     err_mat = v1-np.dot(mat,v2)
-    err_norm = LA.norm(err_mat[0,:])+LA.norm(err_mat[1,:])+LA.norm(err_mat[2,:])   
+    # print err_mat
+    err_norm = LA.norm(err_mat[:,0])+LA.norm(err_mat[:,1])+LA.norm(err_mat[:,2])   
     return err_norm
 
 def normalize_quaternion(rot):
@@ -299,25 +317,40 @@ class PrismMonitorWidget(QWidget):
         self.btnQuit.clicked.connect(self.btnQuit_onclick)
         layout.addWidget(self.btnQuit)
         self.setLayout(layout)
+
+        self.Tgl_found = False
+        self.Trl_found = False
+        self.tf_sent = False
         
         # self.LeicaStopTracking()
+
+        self.need_to_reset = False
 
         # launch publisher thread
         self.pub_thread = threading.Thread(target=self.calcTF, args=())
         self.pub_thread.start()
 
     def solveForT(self,v1,v2):
-        v1 = map(list, zip(*v1))
-        v1.append([1,1,1])
-        v2 = map(list, zip(*v2))
-        v2.append([1,1,1])
-        xo = np.array([0,0,0,0,0,0,1])
-        solution = minimize(cost_fun,xo,method='L-BFGS-B',args=(v1,v2))
+        # v1 = map(list, zip(*v1))
+        # v1.append([1,1,1])
+        # v2 = map(list, zip(*v2))
+        # v2.append([1,1,1])
+        v1 = [pt+[1] for pt in v1]
+        v2 = [pt+[1] for pt in v2]
+        # xo = np.array([0,0,0,0,0,0,1])
+        xyzy = np.array([0, 0, 0, 0])
+        solution = minimize(cost_funz,xyzy,method='L-BFGS-B',args=(v1,v2))
+        solution = minimize(cost_fun,[solution.x[0],solution.x[1],solution.x[2],0,0,solution.x[3],1-solution.x[3]*solution.x[3]],method='L-BFGS-B',args=(v1,v2))
         tran_mat = tf.transformations.translation_matrix(np.array([solution.x[0],solution.x[1],solution.x[2]]))
         quat = np.array([solution.x[3],solution.x[4],solution.x[5],solution.x[6]])
         quat = normalize_quaternion(quat) #Vital for Correct Solution
         quat_mat = tf.transformations.quaternion_matrix(np.array(quat))
         T12 = tf.transformations.concatenate_matrices(tran_mat,quat_mat)
+
+        print v1
+        print v2
+        print T12
+
         return T12
 
     def LeicaSetPrismType(self,prism_name):
@@ -329,7 +362,7 @@ class PrismMonitorWidget(QWidget):
             set_prism_type_req.name = prism_name
             set_prism_type_resp = set_prism_type_svc(set_prism_type_req)
         except rospy.ServiceException as e:
-            print "Service call failed: %s"%e
+            rospy.logwarn("Service call failed: %s",e)
             return 
         rospy.loginfo("Prism set to %s",prism_name)
         return set_prism_type_resp
@@ -341,7 +374,7 @@ class PrismMonitorWidget(QWidget):
             rospy.loginfo("Getting current prism name")
             get_prism_type_resp = get_prism_type_svc()
         except rospy.ServiceException as e:
-            print "Service call failed: %s"%e
+            rospy.logwarn("Service call failed: %s",e)
             return 
         current_prism_name = get_prism_type_resp.name
         rospy.loginfo("Current prism: %s",current_prism_name)
@@ -355,7 +388,7 @@ class PrismMonitorWidget(QWidget):
             start_tracking_resp = start_tracking_svc()
             # rospy.loginfo("StartTrackingResponse: %s",start_tracking_resp.__str__())
         except rospy.ServiceException as e:
-            print "Service call failed: %s"%e
+            rospy.logwarn("Service call failed: %s",e)
             return
         rospy.loginfo("Tracking started")
         return start_tracking_resp
@@ -368,25 +401,21 @@ class PrismMonitorWidget(QWidget):
             stop_tracking_req = SetBoolRequest()
             stop_tracking_req.data = False
             stop_tracking_resp = stop_tracking_svc(stop_tracking_req)
-            rospy.loginfo("StopTrackingResponse: %s",stop_tracking_resp.__str__())
+            # rospy.loginfo("StopTrackingResponse: %s",stop_tracking_resp.__str__())
         except rospy.ServiceException as e:
-            print "Service call failed: %s"%e
+            rospy.logwarn("Service call failed: %s",e)
             return 
         rospy.loginfo("Tracking stopped")
         return stop_tracking_resp
 
-    def LeicaGetTF(self):
-        tf_listener = tf.TransformListener()
-        rospy.wait_for_service('prismTransform')
-        try: 
-            rospy.loginfo('Getting TF')
-            prismTransform = rospy.ServiceProxy('prismTransform', gettf) # s = client object
-            req = gettfRequest() 
-            resp = prismTransform(req)
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
-        rospy.loginfo("Got pos: %s",resp.pos.__str__())
-        return resp.pos
+    def LeicaGetPos(self): 
+        pos = [0, 0, 0]
+        try:
+            msg = rospy.wait_for_message("leica_node/position", PointStamped, 2.0)
+        except rospy.Exception as e:
+            rospy.logwarn("Service call failed: %s",e)
+        pos = [msg.point.x, msg.point.y, msg.point.z]
+        return pos
 
     def getTFOnClick(self,prism_btn,prism_name):
         # global Vlp,Vgp
@@ -395,7 +424,10 @@ class PrismMonitorWidget(QWidget):
         # start Leica tracking
         self.LeicaStartTracking()
         # get tf
-        pos = self.LeicaGetTF()
+        pos = self.LeicaGetPos()
+        while any([i==0 for i in pos]):
+            pos = self.LeicaGetPos()
+        rospy.loginfo("Got pos: %s",pos)
         # stop Leica tracking
         self.LeicaStopTracking()
         # disable calculate button    
@@ -437,8 +469,9 @@ class PrismMonitorWidget(QWidget):
 
     def prismG1_onclick(self):
         global Vlp
+        rospy.loginfo("Calculating Gate Position 1")
         pos = self.getTFOnClick(self.prismG1,self.prismG1name)
-        Vlp.append(list(pos))
+        Vlp[0] = pos
 
     def prismG2toggle_onclick(self):
         self.prismG2name = self.togglePrismType(self.prismG2name)
@@ -446,8 +479,9 @@ class PrismMonitorWidget(QWidget):
 
     def prismG2_onclick(self):
         global Vlp
+        rospy.loginfo("Calculating Gate Position 2")
         pos = self.getTFOnClick(self.prismG2,self.prismG2name)
-        Vlp.append(list(pos))
+        Vlp[1] = pos
 
     def prismG3toggle_onclick(self):
         self.prismG3name = self.togglePrismType(self.prismG3name)
@@ -455,8 +489,9 @@ class PrismMonitorWidget(QWidget):
 
     def prismG3_onclick(self):
         global Vlp
+        rospy.loginfo("Calculating Gate Position 3")
         pos = self.getTFOnClick(self.prismG3,self.prismG3name)
-        Vlp.append(list(pos))
+        Vlp[2] = pos
 
     def prismR1toggle_onclick(self):
         self.prismR1name = self.togglePrismType(self.prismR1name)
@@ -464,8 +499,9 @@ class PrismMonitorWidget(QWidget):
 
     def prismR1_onclick(self):
         global Vlq
+        rospy.loginfo("Calculating Robot Position 1")
         pos = self.getTFOnClick(self.prismR1,self.prismR1name)
-        Vlq.append(list(pos))
+        Vlq[0] = pos
 
     def prismR2toggle_onclick(self):
         self.prismR2name = self.togglePrismType(self.prismR2name)
@@ -473,8 +509,9 @@ class PrismMonitorWidget(QWidget):
 
     def prismR2_onclick(self):
         global Vlq
+        rospy.loginfo("Calculating Robot Position 2")
         pos = self.getTFOnClick(self.prismR2,self.prismR2name)
-        Vlq.append(list(pos))
+        Vlq[1] = pos
 
     def prismR3toggle_onclick(self):
         self.prismR3name = self.togglePrismType(self.prismR3name)
@@ -482,17 +519,25 @@ class PrismMonitorWidget(QWidget):
 
     def prismR3_onclick(self):
         global Vlq
+        rospy.loginfo("Calculating Robot Position 3")
         pos = self.getTFOnClick(self.prismR3,self.prismR3name)
-        Vlq.append(list(pos))
+        Vlq[2] = pos
 
     def btnReset_onclick(self):
+        self.need_to_reset = True
+
+    def reset(self):
         global Vlp, Vlq
         rospy.loginfo("Resetting")
 
         self.LeicaStopTracking()
 
-        Vlp = []
-        Vlq = []
+        Vlp = [[None]*3 for i in range(3)]
+        Vlq = [[None]*3 for i in range(3)]
+
+        self.Tgl_found = False
+        self.Trl_found = False
+        self.tf_sent = False
 
         self.prismG1.setEnabled(True)
         self.prismG2.setEnabled(True)
@@ -500,6 +545,8 @@ class PrismMonitorWidget(QWidget):
         self.prismR1.setEnabled(True)
         self.prismR2.setEnabled(True)
         self.prismR3.setEnabled(True)
+
+        self.need_to_reset = False
 
     def btnQuit_onclick(self):
         self.pub_thread.join()
@@ -512,41 +559,44 @@ class PrismMonitorWidget(QWidget):
             rospy.logerror("Invalid ground truth parameters")
             return
 
-        # NEED TO FIX THIS LOGIC
         while not rospy.is_shutdown():
-            Tgl_found = False
-            Trl_found = False
-            tf_sent = False
-            while not rospy.is_shutdown() and (not Tgl_found or not Trl_found):
-                if len(Vlp)>=3 and not Tgl_found:
-                    # print Vgp
-                    # print Vlp
-                    Tgl = self.solveForT(Vgp,Vlp)
-                    rospy.loginfo("Gate->Leica:\n%s",Tgl.__str__())
-                    Tgl_found = True
-                if len(Vlq)>=3 and not Trl_found:
-                    # print Vrq
-                    # print Vlq
-                    Trl = self.solveForT(Vrq,Vlq)
-                    rospy.loginfo("Robot->Leica:\n%s",Trl.__str__())
-                    Trl_found = True
-                if Tgl_found and Trl_found and not tf_sent:
-                    Tgr = tf.transformations.concatenate_matrices(Tgl,tf.transformations.inverse_matrix(Trl))
-                    Trg = tf.transformations.inverse_matrix(Tgr)
-                    # print Tgr
-                    success = self.sendTF(Trg)
-                    if success:
-                        tf_sent = True
-                time.sleep(1)
+            if self.need_to_reset:
+                self.reset()
+            if not any(None in pt for pt in Vlp) and not self.Tgl_found:
+                Tgl = self.solveForT(Vgp,Vlp)
+                rospy.loginfo("Gate->Leica:\n%s, %s",\
+                    tf.transformations.translation_from_matrix(Tgl).__str__(),\
+                    [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(Tgl, 'sxyz')].__str__())
+                self.Tgl_found = True
+            if not any(None in pt for pt in Vlq) and not self.Trl_found:
+                Trl = self.solveForT(Vrq,Vlq)
+                rospy.loginfo("Robot->Leica:\n%s, %s",\
+                    tf.transformations.translation_from_matrix(Trl).__str__(),\
+                    [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(Trl, 'sxyz')].__str__())
+                self.Trl_found = True
+            if self.Tgl_found and self.Trl_found and not self.tf_sent:
+                Tgr = tf.transformations.concatenate_matrices(Tgl,tf.transformations.inverse_matrix(Trl))
+                Trg = tf.transformations.inverse_matrix(Tgr)
+                rospy.loginfo("Robot->Gate:\n%s, %s",\
+                    tf.transformations.translation_from_matrix(Trg).__str__(),\
+                    [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(Trg, 'sxyz')].__str__())
+                success = self.sendTF(Trg)
+                if success:
+                    rospy.loginfo("TF sent")
+                    self.tf_sent = True
+            time.sleep(1)
 
     def sendTF(self,T): 
         global child_frame_id, parent_frame_id, robot_ns
+
+        svc_name = "/"+robot_ns+"/"+"set_world_tf"
+        rospy.loginfo("Sending tf to %s",svc_name)
        
         rospy.loginfo("Waiting for SetTF service")
-        rospy.wait_for_service("/"+robot_ns+"/"+"set_world_tf")
-        set_tf_svc = rospy.ServiceProxy("set_world_tf", SetTF)
+        rospy.wait_for_service(svc_name)
+        set_tf_svc = rospy.ServiceProxy(svc_name, SetTF)
         try:
-            rospy.loginfo("Setting Robot->Gate:\n%s",T.__str__())
+            # rospy.loginfo("Setting Robot->Gate:\n%s",T.__str__())
 
             tf_msg = TransformStamped()
             tf_msg.header.stamp = rospy.Time.now()
@@ -565,11 +615,9 @@ class PrismMonitorWidget(QWidget):
             set_tf_resp = set_tf_svc(set_tf_req)
 
         except rospy.ServiceException as e:
-            print "Service call failed: %s"%e
+            rospy.logwarn("Service call failed: %s",e)
             return set_tf_resp
 
-        rospy.loginfo(set_tf_resp)
-        # rospy.loginfo("Robot->Gate set")
         return set_tf_resp
 
 def main():
