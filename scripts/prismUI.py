@@ -412,7 +412,7 @@ class PrismMonitorWidget(QWidget):
         pos = [0, 0, 0]
         try:
             msg = rospy.wait_for_message("leica_node/position", PointStamped, 2.0)
-        except rospy.Exception as e:
+        except rospy.exceptions.ROSException as e:
             rospy.logwarn("Service call failed: %s",e)
         pos = [msg.point.x, msg.point.y, msg.point.z]
         return pos
@@ -424,9 +424,16 @@ class PrismMonitorWidget(QWidget):
         # start Leica tracking
         self.LeicaStartTracking()
         # get tf
+        count = 0
         pos = self.LeicaGetPos()
         while any([i==0 for i in pos]):
-            pos = self.LeicaGetPos()
+            count+=1
+            if count<5:
+                pos = self.LeicaGetPos()
+            else:
+                rospy.logwarn("Cannot get pos from Leica. Aborting.")
+                self.LeicaStopTracking()
+                return
         rospy.loginfo("Got pos: %s",pos)
         # stop Leica tracking
         self.LeicaStopTracking()
@@ -471,7 +478,8 @@ class PrismMonitorWidget(QWidget):
         global Vlp
         rospy.loginfo("Calculating Gate Position 1")
         pos = self.getTFOnClick(self.prismG1,self.prismG1name)
-        Vlp[0] = pos
+        if not all([i==0 for i in pos]):
+            Vlp[0] = pos
 
     def prismG2toggle_onclick(self):
         self.prismG2name = self.togglePrismType(self.prismG2name)
@@ -481,7 +489,8 @@ class PrismMonitorWidget(QWidget):
         global Vlp
         rospy.loginfo("Calculating Gate Position 2")
         pos = self.getTFOnClick(self.prismG2,self.prismG2name)
-        Vlp[1] = pos
+        if not all([i==0 for i in pos]):
+            Vlp[1] = pos
 
     def prismG3toggle_onclick(self):
         self.prismG3name = self.togglePrismType(self.prismG3name)
@@ -491,7 +500,8 @@ class PrismMonitorWidget(QWidget):
         global Vlp
         rospy.loginfo("Calculating Gate Position 3")
         pos = self.getTFOnClick(self.prismG3,self.prismG3name)
-        Vlp[2] = pos
+        if not all([i==0 for i in pos]):
+            Vlp[2] = pos
 
     def prismR1toggle_onclick(self):
         self.prismR1name = self.togglePrismType(self.prismR1name)
@@ -501,7 +511,8 @@ class PrismMonitorWidget(QWidget):
         global Vlq
         rospy.loginfo("Calculating Robot Position 1")
         pos = self.getTFOnClick(self.prismR1,self.prismR1name)
-        Vlq[0] = pos
+        if not all([i==0 for i in pos]):
+            Vlq[0] = pos
 
     def prismR2toggle_onclick(self):
         self.prismR2name = self.togglePrismType(self.prismR2name)
@@ -511,7 +522,8 @@ class PrismMonitorWidget(QWidget):
         global Vlq
         rospy.loginfo("Calculating Robot Position 2")
         pos = self.getTFOnClick(self.prismR2,self.prismR2name)
-        Vlq[1] = pos
+        if not all([i==0 for i in pos]):
+            Vlq[1] = pos
 
     def prismR3toggle_onclick(self):
         self.prismR3name = self.togglePrismType(self.prismR3name)
@@ -521,7 +533,8 @@ class PrismMonitorWidget(QWidget):
         global Vlq
         rospy.loginfo("Calculating Robot Position 3")
         pos = self.getTFOnClick(self.prismR3,self.prismR3name)
-        Vlq[2] = pos
+        if not all([i==0 for i in pos]):
+            Vlq[2] = pos
 
     def btnReset_onclick(self):
         self.need_to_reset = True
