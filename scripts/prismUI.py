@@ -412,34 +412,53 @@ class PrismMonitorWidget(QWidget):
         pos = [0, 0, 0]
         try:
             msg = rospy.wait_for_message("leica_node/position", PointStamped, 2.0)
+            pos = [msg.point.x, msg.point.y, msg.point.z]
         except rospy.exceptions.ROSException as e:
             rospy.logwarn("Service call failed: %s",e)
-        pos = [msg.point.x, msg.point.y, msg.point.z]
         return pos
 
     def getTFOnClick(self,prism_btn,prism_name):
+        pos = [0,0,0]
+           
+        prism_btn.setEnabled(False)
         # global Vlp,Vgp
         # set prism type in Leica to that which is currently displayed in the GUI
         self.LeicaSetPrismType(prism_name)
-        # start Leica tracking
-        self.LeicaStartTracking()
-        # get tf
-        count = 0
-        pos = self.LeicaGetPos()
-        while any([i==0 for i in pos]):
-            count+=1
-            if count<5:
-                pos = self.LeicaGetPos()
-            else:
-                rospy.logwarn("Cannot get pos from Leica. Aborting.")
-                self.LeicaStopTracking()
-                return
-        rospy.loginfo("Got pos: %s",pos)
-        # stop Leica tracking
-        self.LeicaStopTracking()
-        # disable calculate button    
-        prism_btn.setEnabled(False)
 
+        # # start Leica tracking
+        # self.LeicaStartTracking()
+        # # get tf
+        # count = 0
+        # pos = self.LeicaGetPos()
+        # while any([i==0 for i in pos]):
+        #     count+=1
+        #     if count<5:
+        #         pos = self.LeicaGetPos()
+        #     else:
+        #         rospy.logwarn("Cannot get pos from Leica. Aborting.")
+        #         self.LeicaStopTracking()
+        #         return
+        # rospy.loginfo("Got pos: %s",pos)
+        # # stop Leica tracking
+        # self.LeicaStopTracking()
+
+        got_pos = False
+        no_fails = 0
+        max_no_fails = 5
+        while not got_pos:
+            self.LeicaStartTracking()
+            pos = self.LeicaGetPos()
+            got_pos = not all([i==0 for i in pos])
+            if not got_pos:
+                no_fails += 1
+                if no_fails<max_no_fails:
+                    rospy.logwarn("Cannot get pos from Leica. Trying again (%d/%d attempts left).",max_no_fails-no_fails,max_no_fails)
+                    rospy.logwarn("Possible causes: \n- target prism appears too close to another prism")
+                else:
+                    rospy.logwarn("Cannot get pos from Leica. Aborting.")
+                    got_pos = True
+                    prism_btn.setEnabled(True)
+            self.LeicaStopTracking()
         return pos
      
     def togglePrismType(self,current_prism_name):
@@ -605,7 +624,7 @@ class PrismMonitorWidget(QWidget):
         svc_name = "/"+robot_ns+"/"+"set_world_tf"
         rospy.loginfo("Sending tf to %s",svc_name)
        
-        rospy.loginfo("Waiting for SetTF service")
+        rospy.loginfo("Waiting for SetTF service indefinitely.")
         rospy.wait_for_service(svc_name)
         set_tf_svc = rospy.ServiceProxy(svc_name, SetTF)
         try:
