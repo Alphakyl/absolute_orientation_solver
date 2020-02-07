@@ -31,6 +31,7 @@ import message_filters
 
 from leica_ros.srv import *
 from ltf.srv import *
+# from marble_origin_detection_msgs.srv import SetTF, SetTFRequest, SetTFResponse
 
 import threading
 
@@ -156,20 +157,6 @@ class PrismMonitorWidget(QWidget):
         super(PrismMonitorWidget,self).__init__()
         layout = QVBoxLayout()
 
-        # robot
-        boxLayout = QHBoxLayout()
-        groupBox = QGroupBox('Target Robot') 
-
-        self.robottoggle = QPushButton('Toggle')
-        self.robottoggle.clicked.connect(self.robottoggle_onclick) 
-        boxLayout.addWidget(self.robottoggle)
-
-        self.robotnslabel = QLabel(robot_ns) 
-        boxLayout.addWidget(self.robotnslabel)
-
-        groupBox.setLayout(boxLayout)
-        layout.addWidget(groupBox)
-
         # gate group
         prismGroupLayout = QVBoxLayout()
         prismGroup = QGroupBox('Gate') 
@@ -233,6 +220,11 @@ class PrismMonitorWidget(QWidget):
         groupBox.setLayout(boxLayout)
         prismGroupLayout.addWidget(groupBox)
         # layout.addWidget(groupBox)
+
+        # reset gate
+        self.btnResetGate = QPushButton('Reset Gate')
+        self.btnResetGate.clicked.connect(self.btnResetGate_onclick)
+        prismGroupLayout.addWidget(self.btnResetGate)
 
         # gate group
         prismGroup.setLayout(prismGroupLayout)
@@ -302,29 +294,48 @@ class PrismMonitorWidget(QWidget):
         prismGroupLayout.addWidget(groupBox)
         # layout.addWidget(groupBox)
 
+        self.btnResetRobot = QPushButton('Reset Robot')
+        self.btnResetRobot.clicked.connect(self.btnResetRobot_onclick)
+        prismGroupLayout.addWidget(self.btnResetRobot)
+
         # robot group
         prismGroup.setLayout(prismGroupLayout)
         layout.addWidget(prismGroup)
 
-        # reset Button layout
-        self.btnReset = QPushButton('Reset')
-        self.btnReset.clicked.connect(self.btnReset_onclick)
-        layout.addWidget(self.btnReset)
-        self.setLayout(layout)
+        # send tf and toggle robot layout
+        boxLayout = QHBoxLayout()
+        groupBox = QGroupBox('Target Robot') 
+
+        self.robottoggle = QPushButton('Toggle')
+        self.robottoggle.clicked.connect(self.robottoggle_onclick) 
+        boxLayout.addWidget(self.robottoggle)
+
+        self.robotnslabel = QLabel(robot_ns) 
+        boxLayout.addWidget(self.robotnslabel)
+
+        self.sendtfbtn = QPushButton('Send TF')
+        self.sendtfbtn.clicked.connect(self.sendTF) 
+        boxLayout.addWidget(self.sendtfbtn)
+
+        groupBox.setLayout(boxLayout)
+        layout.addWidget(groupBox)
        
         #Exit Button layout
         self.btnQuit = QPushButton('Exit')
         self.btnQuit.clicked.connect(self.btnQuit_onclick)
         layout.addWidget(self.btnQuit)
+
+
         self.setLayout(layout)
 
         self.Tgl_found = False
         self.Trl_found = False
-        self.tf_sent = False
+        self.Trg_found = False
+        self.need_to_reset_gate = False
+        self.need_to_reset_robot = False
         
         # self.LeicaStopTracking()
 
-        self.need_to_reset = False
 
         # launch publisher thread
         self.pub_thread = threading.Thread(target=self.calcTF, args=())
@@ -354,7 +365,11 @@ class PrismMonitorWidget(QWidget):
         return T12
 
     def LeicaSetPrismType(self,prism_name):
-        rospy.wait_for_service('leica_node/set_prism_type')
+        # try:
+        #     rospy.wait_for_service('leica_node/set_prism_type',timeout=5)
+        # except rospy.ServiceException as e:
+        #     rospy.logwarn("Service call failed: %s",e)
+        #     return
         set_prism_type_svc = rospy.ServiceProxy('leica_node/set_prism_type', SetPrismType)
         try:
             rospy.loginfo("Setting to prism: %s",prism_name)
@@ -368,7 +383,10 @@ class PrismMonitorWidget(QWidget):
         return set_prism_type_resp
 
     def LeicaGetPrismType(self):
-        rospy.wait_for_service('leica_node/get_prism_type')
+        # try rospy.wait_for_service('leica_node/get_prism_type',timeout=5):
+        #     continue
+        # except rospy.ServiceException as e:
+        #     rospy.logwarn("Service call failed: %s",e)
         get_prism_type_svc = rospy.ServiceProxy('leica_node/get_prism_type', GetPrismType)
         try:
             rospy.loginfo("Getting current prism name")
@@ -381,7 +399,10 @@ class PrismMonitorWidget(QWidget):
         return current_prism_name
 
     def LeicaStartTracking(self):
-        rospy.wait_for_service('leica_node/start_tracking')
+        # try rospy.wait_for_service('leica_node/start_tracking',timeout=5):
+        #     continue
+        # except rospy.ServiceException as e:
+        #     rospy.logwarn("Service call failed: %s",e)
         start_tracking_svc = rospy.ServiceProxy('leica_node/start_tracking', StartTracking)
         try:
             rospy.loginfo("Starting tracking")
@@ -394,7 +415,10 @@ class PrismMonitorWidget(QWidget):
         return start_tracking_resp
 
     def LeicaStopTracking(self):
-        rospy.wait_for_service('leica_node/stop_tracking')
+        # try rospy.wait_for_service('leica_node/stop_tracking',timeout=5):
+        #     continue
+        # except rospy.ServiceException as e:
+        #     rospy.logwarn("Service call failed: %s",e)
         stop_tracking_svc = rospy.ServiceProxy('leica_node/stop_tracking', SetBool)
         try:
             rospy.loginfo("Stopping tracking")
@@ -411,7 +435,7 @@ class PrismMonitorWidget(QWidget):
     def LeicaGetPos(self): 
         pos = [0, 0, 0]
         try:
-            msg = rospy.wait_for_message("leica_node/position", PointStamped, 2.0)
+            msg = rospy.wait_for_message("leica_node/position", PointStamped, 5.0)
             pos = [msg.point.x, msg.point.y, msg.point.z]
         except rospy.exceptions.ROSException as e:
             rospy.logwarn("Service call failed: %s",e)
@@ -555,30 +579,48 @@ class PrismMonitorWidget(QWidget):
         if not all([i==0 for i in pos]):
             Vlq[2] = pos
 
-    def btnReset_onclick(self):
-        self.need_to_reset = True
+    def btnResetGate_onclick(self):
+        self.need_to_reset_gate = True
 
-    def reset(self):
-        global Vlp, Vlq
-        rospy.loginfo("Resetting")
+    def btnResetRobot_onclick(self):
+        self.need_to_reset_robot = True
+
+    def resetGate(self):
+        global Vlp
+        rospy.loginfo("Resetting Gate")
 
         self.LeicaStopTracking()
 
         Vlp = [[None]*3 for i in range(3)]
-        Vlq = [[None]*3 for i in range(3)]
+        self.Trg = None
 
         self.Tgl_found = False
-        self.Trl_found = False
-        self.tf_sent = False
+        self.Trg_found = False
 
         self.prismG1.setEnabled(True)
         self.prismG2.setEnabled(True)
         self.prismG3.setEnabled(True)
+
+        self.need_to_reset_gate = False
+
+    
+    def resetRobot(self):
+        global Vlq
+        rospy.loginfo("Resetting Robot")
+
+        self.LeicaStopTracking()
+
+        Vlq = [[None]*3 for i in range(3)]
+        self.Trg = None
+
+        self.Trl_found = False
+        self.Trg_found = False
+
         self.prismR1.setEnabled(True)
         self.prismR2.setEnabled(True)
         self.prismR3.setEnabled(True)
 
-        self.need_to_reset = False
+        self.need_to_reset_robot = False
 
     def btnQuit_onclick(self):
         self.pub_thread.join()
@@ -592,8 +634,10 @@ class PrismMonitorWidget(QWidget):
             return
 
         while not rospy.is_shutdown():
-            if self.need_to_reset:
-                self.reset()
+            if self.need_to_reset_gate:
+                self.resetGate()
+            if self.need_to_reset_robot:
+                self.resetRobot()
             if not any(None in pt for pt in Vlp) and not self.Tgl_found:
                 Tgl = self.solveForT(Vgp,Vlp)
                 rospy.loginfo("Gate->Leica:\n%s, %s",\
@@ -606,51 +650,64 @@ class PrismMonitorWidget(QWidget):
                     tf.transformations.translation_from_matrix(Trl).__str__(),\
                     [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(Trl, 'sxyz')].__str__())
                 self.Trl_found = True
-            if self.Tgl_found and self.Trl_found and not self.tf_sent:
+            if self.Tgl_found and self.Trl_found:
                 Tgr = tf.transformations.concatenate_matrices(Tgl,tf.transformations.inverse_matrix(Trl))
                 Trg = tf.transformations.inverse_matrix(Tgr)
-                rospy.loginfo("Robot->Gate:\n%s, %s",\
-                    tf.transformations.translation_from_matrix(Trg).__str__(),\
-                    [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(Trg, 'sxyz')].__str__())
-                success = self.sendTF(Trg)
-                if success:
-                    rospy.loginfo("TF sent")
-                    self.tf_sent = True
+                self.Trg = Trg
+                if not self.Trg_found:
+                    rospy.loginfo("Robot->Gate:\n%s, %s",\
+                        tf.transformations.translation_from_matrix(Trg).__str__(),\
+                        [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(Trg, 'sxyz')].__str__())
+                self.Trg_found = True
             time.sleep(1)
 
     def sendTF(self,T): 
         global child_frame_id, parent_frame_id, robot_ns
 
+        if not self.Trg_found:
+            rospy.logwarn("Can't send TF. Tf not found yet.")
+            return
+
+        wait_for_svc_timeout = 5
         svc_name = "/"+robot_ns+"/"+"set_world_tf"
         rospy.loginfo("Sending tf to %s",svc_name)
        
-        rospy.loginfo("Waiting for SetTF service indefinitely.")
-        rospy.wait_for_service(svc_name)
-        set_tf_svc = rospy.ServiceProxy(svc_name, SetTF)
-        try:
-            # rospy.loginfo("Setting Robot->Gate:\n%s",T.__str__())
+        rospy.loginfo("Waiting for SetTF service.")
+        if rospy.wait_for_service(svc_name,timeout=wait_for_svc_timeout):
+            set_tf_svc = rospy.ServiceProxy(svc_name, SetTF)
+            set_tf_resp = SetTFResponse()
+            try:
+                # rospy.loginfo("Setting Robot->Gate:\n%s",T.__str__())
 
-            tf_msg = TransformStamped()
-            tf_msg.header.stamp = rospy.Time.now()
-            tf_msg.header.frame_id = parent_frame_id
-            tf_msg.child_frame_id = child_frame_id
-            tf_msg.transform.translation.x = tf.transformations.translation_from_matrix(T)[0]
-            tf_msg.transform.translation.y = tf.transformations.translation_from_matrix(T)[1]
-            tf_msg.transform.translation.z = tf.transformations.translation_from_matrix(T)[2]
-            tf_msg.transform.rotation.x = tf.transformations.quaternion_from_matrix(T)[0]
-            tf_msg.transform.rotation.y = tf.transformations.quaternion_from_matrix(T)[1]
-            tf_msg.transform.rotation.z = tf.transformations.quaternion_from_matrix(T)[2]
-            tf_msg.transform.rotation.w = tf.transformations.quaternion_from_matrix(T)[3]
+                tf_msg = TransformStamped()
+                tf_msg.header.stamp = rospy.Time.now()
+                tf_msg.header.frame_id = parent_frame_id
+                tf_msg.child_frame_id = child_frame_id
+                tf_msg.transform.translation.x = tf.transformations.translation_from_matrix(T)[0]
+                tf_msg.transform.translation.y = tf.transformations.translation_from_matrix(T)[1]
+                tf_msg.transform.translation.z = tf.transformations.translation_from_matrix(T)[2]
+                tf_msg.transform.rotation.x = tf.transformations.quaternion_from_matrix(T)[0]
+                tf_msg.transform.rotation.y = tf.transformations.quaternion_from_matrix(T)[1]
+                tf_msg.transform.rotation.z = tf.transformations.quaternion_from_matrix(T)[2]
+                tf_msg.transform.rotation.w = tf.transformations.quaternion_from_matrix(T)[3]
 
-            set_tf_req = SetTFRequest()
-            set_tf_req.transform = tf_msg
-            set_tf_resp = set_tf_svc(set_tf_req)
+                set_tf_req = SetTFRequest()
+                set_tf_req.transform = tf_msg
+                set_tf_resp = set_tf_svc(set_tf_req)
 
-        except rospy.ServiceException as e:
-            rospy.logwarn("Service call failed: %s",e)
-            return set_tf_resp
+                if set_tf_resp:
+                    rospy.loginfo("TF sent.")
+                else:
+                    rospy.logwarn("Service call failed.")
 
-        return set_tf_resp
+            except rospy.ServiceException as e:
+                rospy.logwarn("Service call failed: %s",e)
+                return
+
+        else:
+            rospy.logwarn("Failed to send TF after "+wait_for_svc_timeout.__str__()+" s.")
+            return
+        return
 
 def main():
 
