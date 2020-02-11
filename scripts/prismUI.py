@@ -661,52 +661,55 @@ class PrismMonitorWidget(QWidget):
                 self.Trg_found = True
             time.sleep(1)
 
-    def sendTF(self,T): 
+    def sendTF(self): 
         global child_frame_id, parent_frame_id, robot_ns
 
         if not self.Trg_found:
             rospy.logwarn("Can't send TF. Tf not found yet.")
             return
+        if not self.Trg.shape==(4,4):
+            rospy.logwarn("Can't send TF. Tf is wrong size.")
+            return
 
-        wait_for_svc_timeout = 5
+        # wait_for_svc_timeout = 5.0
         svc_name = "/"+robot_ns+"/"+"set_world_tf"
         rospy.loginfo("Sending tf to %s",svc_name)
        
-        rospy.loginfo("Waiting for SetTF service.")
-        if rospy.wait_for_service(svc_name,timeout=wait_for_svc_timeout):
-            set_tf_svc = rospy.ServiceProxy(svc_name, SetTF)
-            set_tf_resp = SetTFResponse()
-            try:
-                # rospy.loginfo("Setting Robot->Gate:\n%s",T.__str__())
+        # rospy.loginfo("Waiting for SetTF service.")
+        # if rospy.wait_for_service(svc_name,timeout=wait_for_svc_timeout):
+        set_tf_svc = rospy.ServiceProxy(svc_name, SetTF)
+        set_tf_resp = SetTFResponse()
+        try:
+            # rospy.loginfo("Setting Robot->Gate:\n%s",T.__str__())
 
-                tf_msg = TransformStamped()
-                tf_msg.header.stamp = rospy.Time.now()
-                tf_msg.header.frame_id = parent_frame_id
-                tf_msg.child_frame_id = child_frame_id
-                tf_msg.transform.translation.x = tf.transformations.translation_from_matrix(T)[0]
-                tf_msg.transform.translation.y = tf.transformations.translation_from_matrix(T)[1]
-                tf_msg.transform.translation.z = tf.transformations.translation_from_matrix(T)[2]
-                tf_msg.transform.rotation.x = tf.transformations.quaternion_from_matrix(T)[0]
-                tf_msg.transform.rotation.y = tf.transformations.quaternion_from_matrix(T)[1]
-                tf_msg.transform.rotation.z = tf.transformations.quaternion_from_matrix(T)[2]
-                tf_msg.transform.rotation.w = tf.transformations.quaternion_from_matrix(T)[3]
+            tf_msg = TransformStamped()
+            tf_msg.header.stamp = rospy.Time.now()
+            tf_msg.header.frame_id = parent_frame_id
+            tf_msg.child_frame_id = child_frame_id
+            tf_msg.transform.translation.x = tf.transformations.translation_from_matrix(self.Trg)[0]
+            tf_msg.transform.translation.y = tf.transformations.translation_from_matrix(self.Trg)[1]
+            tf_msg.transform.translation.z = tf.transformations.translation_from_matrix(self.Trg)[2]
+            tf_msg.transform.rotation.x = tf.transformations.quaternion_from_matrix(self.Trg)[0]
+            tf_msg.transform.rotation.y = tf.transformations.quaternion_from_matrix(self.Trg)[1]
+            tf_msg.transform.rotation.z = tf.transformations.quaternion_from_matrix(self.Trg)[2]
+            tf_msg.transform.rotation.w = tf.transformations.quaternion_from_matrix(self.Trg)[3]
 
-                set_tf_req = SetTFRequest()
-                set_tf_req.transform = tf_msg
-                set_tf_resp = set_tf_svc(set_tf_req)
+            set_tf_req = SetTFRequest()
+            set_tf_req.transform = tf_msg
+            set_tf_resp = set_tf_svc(set_tf_req)
 
-                if set_tf_resp:
-                    rospy.loginfo("TF sent.")
-                else:
-                    rospy.logwarn("Service call failed.")
+            if set_tf_resp:
+                rospy.loginfo("TF sent.")
+            else:
+                rospy.logwarn("Service call failed.")
 
-            except rospy.ServiceException as e:
-                rospy.logwarn("Service call failed: %s",e)
-                return
-
-        else:
-            rospy.logwarn("Failed to send TF after "+wait_for_svc_timeout.__str__()+" s.")
+        except rospy.ServiceException as e:
+            rospy.logwarn("Service call failed: %s",e)
             return
+
+        # else:
+        #     rospy.logwarn("Failed to send TF after "+wait_for_svc_timeout.__str__()+" s.")
+        #     return
         return
 
 def main():
