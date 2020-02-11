@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "/home/arpg/catkin_ws/src/ltf"
+		},
+		{
+			"path": "/home/arpg/catkin_ws/src/leica_ros"
+		},
+		{
+			"path": "/home/arpg/catkin_ws/src/marble/estop_ui"
+		}
+	],
+	"settings": {}
+}
