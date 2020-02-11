@@ -30,7 +30,7 @@ from geometry_msgs.msg import *
 import message_filters
 
 from leica_ros.srv import *
-from ltf.srv import *
+from marble_origin_detection_msgs.srv import *
 # from marble_origin_detection_msgs.srv import SetTF, SetTFRequest, SetTFResponse
 
 import threading
