@@ -9,7 +9,7 @@ from builtins import str, object
 
 import rospy
 from geometry_msgs.msg import *
-from ltf.srv import *
+from marble_origin_detection_msgs.srv import *
 
 class SetTFTest():
     def __init__(self,robot_ns):

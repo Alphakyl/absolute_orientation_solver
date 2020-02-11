@@ -115,7 +115,7 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ltf
   CATKIN_DEPENDS leica_ros roscpp rospy tf std_msgs message_runtime 
-  DEPENDS system_lib
+  DEPENDS
 )
 
 ###########
