@@ -40,19 +40,25 @@ robot_ns = "A99"
 child_frame_id = "gate_leica"
 parent_frame_id = "body_aligned_imu_link"
 
-# test gate to robot
+# large test gate
 # Vgp1 = [0.0,1.523 , 1.07]
 # Vgp2 = [0.0, 0.0, 1.83]
 # Vgp3 = [0.0, -1.394, 0.755]
 
-# robot to robot
-Vgp1 = [-0.045, 0.100025, 0.0174602]
-Vgp2 = [0.045, -0.100025, 0.0174602]
-Vgp3 = [-0.045, -0.100025, 0.0174602]
+# small test gate
+Vgp1 = [-0.045, 0.100025, 0.0174602] # left
+Vgp2 = [0.045, -0.100025, 0.0174602] # top
+Vgp3 = [-0.045, -0.100025, 0.0174602] # right
 
-Vrq1 = [-0.045, 0.100025, 0.0174602]
-Vrq2 = [0.045, -0.100025, 0.0174602]
-Vrq3 = [-0.045, -0.100025, 0.0174602]
+# UGVs w/ base plate v5
+# Vrq1 = [-0.045, 0.100025, 0.0174602]
+# Vrq2 = [0.045, -0.100025, 0.0174602]
+# Vrq3 = [-0.045, -0.100025, 0.0174602]
+
+# UAVs on launch pad
+Vrq1 = [-0.2, 0.25, -0.25]
+Vrq2 = [0.2, -0.25, -0.25]
+Vrq3 = [-0.2, -0.25, -0.25]
 
 Vgp = [Vgp1,Vgp2,Vgp3]
 Vrq = [Vrq1,Vrq2,Vrq3]
@@ -147,7 +153,7 @@ class PrismMonitorWidget(QWidget):
         }
     ]
 
-    availableRobots = ["H01","H02","H03","T01","T02","T03","L01","A99"]
+    availableRobots = ["H01","H02","H03","T01","T02","T03","L01","A01","A02","A03","A99"]
 
     def __init__(self,parent = None):
         global robot_ns
