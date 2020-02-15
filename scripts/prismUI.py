@@ -51,19 +51,49 @@ Vgp2 = [0.045, -0.100025, 0.0174602] # top
 Vgp3 = [-0.045, -0.100025, 0.0174602] # right
 
 # UGVs w/ base plate v5
-# Vrq1 = [-0.045, 0.100025, 0.0174602]
-# Vrq2 = [0.045, -0.100025, 0.0174602]
-# Vrq3 = [-0.045, -0.100025, 0.0174602]
+Vrq1 = [-0.045, 0.100025, 0.0174602]
+Vrq2 = [0.045, -0.100025, 0.0174602]
+Vrq3 = [-0.045, -0.100025, 0.0174602]
 
 # UAVs on launch pad
-Vrq1 = [-0.2, 0.25, -0.25]
-Vrq2 = [0.2, -0.25, -0.25]
-Vrq3 = [-0.2, -0.25, -0.25]
+# Vrq1 = [-0.2, 0.25, -0.25]
+# Vrq2 = [0.2, -0.25, -0.25]
+# Vrq3 = [-0.2, -0.25, -0.25]
 
 Vgp = [Vgp1,Vgp2,Vgp3]
 Vrq = [Vrq1,Vrq2,Vrq3]
 Vlp = [[None]*3 for i in range(3)]
 Vlq = [[None]*3 for i in range(3)]
+
+AVAILABLE_PRISMS = 
+[
+    {
+        "name"     : "big_360",
+        "num"      : 3,
+        "constant" : 34.4,
+        "z"        : 0.0
+    },
+    {
+        "name"     : "mini_360",
+        "num"      : 7,
+        "constant" : 30.0 
+        "z"        : 0.0
+    },
+    {
+        "name"     : "micro_360",
+        "num"      : 7,
+        "constant" : 30.0
+        "z"        : 0.0
+    },
+    {
+        "name"     : "mini_lp",
+        "num"      : 1,
+        "constant" : 17.5
+        "z"        : 0.0
+    }
+]
+
+AVAILABLE_ROBOTS = ["H01","H02","H03","T01","T02","T03","L01","A01","A02","A03","A99"]
 
 def cost_fun(x,v1,v2):
     v1 = map(list, zip(*v1))
@@ -134,26 +164,6 @@ class PrismMonitorWidget(QWidget):
     commandUpdate = pyqtSignal(Transform)
     # Current_P = prism_tf()
     # counter = 0
-
-    availablePrisms = [
-        {
-            "name" : "big_360",
-            "num"  : 3,
-            "constant" : 34.4
-        },
-        {
-            "name" : "mini_360",
-            "num"  : 7,
-            "constant" : 30.0 
-        },
-        {
-            "name" : "mini_lp",
-            "num"  : 1,
-            "constant" :  17.5
-        }
-    ]
-
-    availableRobots = ["H01","H02","H03","T01","T02","T03","L01","A01","A02","A03","A99"]
 
     def __init__(self,parent = None):
         global robot_ns
@@ -489,29 +499,34 @@ class PrismMonitorWidget(QWidget):
                     got_pos = True
                     prism_btn.setEnabled(True)
             self.LeicaStopTracking()
+        delta_z = AVAILABLE_PRISMS[next(i for i in range(len(AVAILABLE_PRISMS)) if AVAILABLE_PRISMS[i]["name"]==prism_name)]["z"]
+        if len(delta_z)>1:
+            rospy.logerror("Multiple available prisms of same name.")
+            return pos
+        pos[3] += delta_z
         return pos
      
     def togglePrismType(self,current_prism_name):
         # current_prism_name = self.LeicaGetPrismType()
-        current_idx = next((i for i in range(len(self.availablePrisms)) if self.availablePrisms[i]["name"]==current_prism_name),None)
+        current_idx = next((i for i in range(len(AVAILABLE_PRISMS)) if AVAILABLE_PRISMS[i]["name"]==current_prism_name),None)
         if current_idx is None:
             rospy.logwarn("The current prism name is invalid")
             return
         next_idx = current_idx+1
-        if next_idx >= len(self.availablePrisms):
+        if next_idx >= len(AVAILABLE_PRISMS):
             next_idx = 0
-        new_prism_name = self.availablePrisms[next_idx]["name"]
+        new_prism_name = AVAILABLE_PRISMS[next_idx]["name"]
         return new_prism_name
 
     def toggleRobot(self,current_robot_name):
-        current_idx = next((i for i in range(len(self.availableRobots)) if self.availableRobots[i]==current_robot_name),None)
+        current_idx = next((i for i in range(len(AVAILABLE_ROBOTS)) if AVAILABLE_ROBOTS[i]==current_robot_name),None)
         if current_idx is None:
             rospy.logwarn("The current robot name is invalid")
             return
         next_idx = current_idx+1
-        if next_idx >= len(self.availableRobots):
+        if next_idx >= len(AVAILABLE_ROBOTS):
             next_idx = 0
-        new_robot_name = self.availableRobots[next_idx]
+        new_robot_name = AVAILABLE_ROBOTS[next_idx]
         return new_robot_name
 
     def robottoggle_onclick(self):
