@@ -75,8 +75,7 @@ Vrq = [Vrq1,Vrq2,Vrq3]
 Vlp = [[None]*3 for i in range(3)]
 Vlq = [[None]*3 for i in range(3)]
 
-AVAILABLE_PRISMS = 
-[
+AVAILABLE_PRISMS = [
     {
         "name"     : "big_360",
         "num"      : 3,
@@ -86,20 +85,20 @@ AVAILABLE_PRISMS =
     {
         "name"     : "mini_360",
         "num"      : 7,
-        "constant" : 30.0 
-        "z"        : 0.02159
+        "constant" : 30.0, 
+        "z"        : 0.02159,
     },
     {
         "name"     : "micro_360",
         "num"      : 7,
-        "constant" : 30.0
-        "z"        : 0.01524
+        "constant" : 30.0,
+        "z"        : 0.01524,
     },
     {
         "name"     : "mini_lp",
         "num"      : 1,
-        "constant" : 17.5
-        "z"        : 0.0
+        "constant" : 17.5,
+        "z"        : 0.0,
     }
 ]
 
@@ -384,9 +383,9 @@ class PrismMonitorWidget(QWidget):
         quat_mat = tf.transformations.quaternion_matrix(np.array(quat))
         T12 = tf.transformations.concatenate_matrices(tran_mat,quat_mat)
 
-        print v1
-        print v2
-        print T12
+        # print v1
+        # print v2
+        # print T12
 
         return T12
 
@@ -509,11 +508,6 @@ class PrismMonitorWidget(QWidget):
                     got_pos = True
                     prism_btn.setEnabled(True)
             self.LeicaStopTracking()
-        delta_z = AVAILABLE_PRISMS[next(i for i in range(len(AVAILABLE_PRISMS)) if AVAILABLE_PRISMS[i]["name"]==prism_name)]["z"]
-        if len(delta_z)>1:
-            rospy.logerror("Multiple available prisms of same name.")
-            return pos
-        pos[3] += delta_z
         return pos
      
     def togglePrismType(self,current_prism_name):
@@ -549,66 +543,102 @@ class PrismMonitorWidget(QWidget):
         self.prismG1namelabel.setText(self.prismG1name)
 
     def prismG1_onclick(self):
-        global Vlp
+        global Vlp, Vgp
         rospy.loginfo("Calculating Gate Position 1")
         pos = self.getTFOnClick(self.prismG1,self.prismG1name)
         if not all([i==0 for i in pos]):
             Vlp[0] = pos
+
+        delta_z = AVAILABLE_PRISMS[next(i for i in range(len(AVAILABLE_PRISMS)) if AVAILABLE_PRISMS[i]["name"]==self.prismG1name)]["z"]
+        if isinstance(delta_z,list):
+            rospy.logerror("Multiple available prisms of same name.")
+            return pos
+        Vgp[0][2] += delta_z
 
     def prismG2toggle_onclick(self):
         self.prismG2name = self.togglePrismType(self.prismG2name)
         self.prismG2namelabel.setText(self.prismG2name)
 
     def prismG2_onclick(self):
-        global Vlp
+        global Vlp, Vgp
         rospy.loginfo("Calculating Gate Position 2")
         pos = self.getTFOnClick(self.prismG2,self.prismG2name)
         if not all([i==0 for i in pos]):
             Vlp[1] = pos
+
+        delta_z = AVAILABLE_PRISMS[next(i for i in range(len(AVAILABLE_PRISMS)) if AVAILABLE_PRISMS[i]["name"]==self.prismG2name)]["z"]
+        if isinstance(delta_z,list):
+            rospy.logerror("Multiple available prisms of same name.")
+            return pos
+        Vgp[1][2] += delta_z
 
     def prismG3toggle_onclick(self):
         self.prismG3name = self.togglePrismType(self.prismG3name)
         self.prismG3namelabel.setText(self.prismG3name)
 
     def prismG3_onclick(self):
-        global Vlp
+        global Vlp, Vgp
         rospy.loginfo("Calculating Gate Position 3")
         pos = self.getTFOnClick(self.prismG3,self.prismG3name)
         if not all([i==0 for i in pos]):
             Vlp[2] = pos
+
+        delta_z = AVAILABLE_PRISMS[next(i for i in range(len(AVAILABLE_PRISMS)) if AVAILABLE_PRISMS[i]["name"]==self.prismG3name)]["z"]
+        if isinstance(delta_z,list):
+            rospy.logerror("Multiple available prisms of same name.")
+            return pos
+        Vgp[2][2] += delta_z
 
     def prismR1toggle_onclick(self):
         self.prismR1name = self.togglePrismType(self.prismR1name)
         self.prismR1namelabel.setText(self.prismR1name)
 
     def prismR1_onclick(self):
-        global Vlq
+        global Vlq, Vrq
         rospy.loginfo("Calculating Robot Position 1")
         pos = self.getTFOnClick(self.prismR1,self.prismR1name)
         if not all([i==0 for i in pos]):
             Vlq[0] = pos
+
+        delta_z = AVAILABLE_PRISMS[next(i for i in range(len(AVAILABLE_PRISMS)) if AVAILABLE_PRISMS[i]["name"]==self.prismR1name)]["z"]
+        if isinstance(delta_z,list):
+            rospy.logerror("Multiple available prisms of same name.")
+            return pos
+        Vrq[0][2] += delta_z
 
     def prismR2toggle_onclick(self):
         self.prismR2name = self.togglePrismType(self.prismR2name)
         self.prismR2namelabel.setText(self.prismR2name)
 
     def prismR2_onclick(self):
-        global Vlq
+        global Vlq, Vrq
         rospy.loginfo("Calculating Robot Position 2")
         pos = self.getTFOnClick(self.prismR2,self.prismR2name)
         if not all([i==0 for i in pos]):
             Vlq[1] = pos
+
+        delta_z = AVAILABLE_PRISMS[next(i for i in range(len(AVAILABLE_PRISMS)) if AVAILABLE_PRISMS[i]["name"]==self.prismR2name)]["z"]
+        if isinstance(delta_z,list):
+            rospy.logerror("Multiple available prisms of same name.")
+            return pos
+        Vrq[1][2] += delta_z
 
     def prismR3toggle_onclick(self):
         self.prismR3name = self.togglePrismType(self.prismR3name)
         self.prismR3namelabel.setText(self.prismR3name)
 
     def prismR3_onclick(self):
-        global Vlq
+        global Vlq, Vrq
         rospy.loginfo("Calculating Robot Position 3")
         pos = self.getTFOnClick(self.prismR3,self.prismR3name)
         if not all([i==0 for i in pos]):
             Vlq[2] = pos
+
+        delta_z = AVAILABLE_PRISMS[next(i for i in range(len(AVAILABLE_PRISMS)) if AVAILABLE_PRISMS[i]["name"]==self.prismR3name)]["z"]
+        if isinstance(delta_z,list):
+            rospy.logerror("Multiple available prisms of same name.")
+            return pos
+        Vrq[2][2] += delta_z
 
     def btnResetGate_onclick(self):
         self.need_to_reset_gate = True
