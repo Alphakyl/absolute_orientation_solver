@@ -70,6 +70,11 @@ Vrq3 = [-0.045, -0.100025, -0.0045]
 # Vrq2 = [0.2, -0.25, -0.25]
 # Vrq3 = [-0.2, -0.25, -0.25]
 
+# UAVs on launch pad corrected
+# Vrq1 = [-0.25, -.1, -.205]
+# Vrq2 = [0.25,0.1, -.205]
+# Vrq3 = [0.25,-.1, -.205]
+
 Vgp = [Vgp1,Vgp2,Vgp3]
 Vrq = [Vrq1,Vrq2,Vrq3]
 Vlp = [[None]*3 for i in range(3)]
