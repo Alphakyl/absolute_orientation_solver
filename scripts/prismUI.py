@@ -515,7 +515,30 @@ class PrismMonitorWidget(QWidget):
             return pos
         pos[3] += delta_z
         return pos
-     
+
+    def toggleGateType(self, current_gate_name):
+        current_idx = next((i for i in range(len(AVAILABLE_GATES)) if AVAILABLE_GATES[i]["name"]==current_gate_name),None)
+        if current_idx is None:
+            rospy.logwarn("The current gate name is invalid")
+            return
+        next_idx = current_idx+1
+        if next_idx >= len(AVAILABLE_GATES):
+            next_idx = 0
+        new_gate_name = AVAILABLE_GATES[next_idx]["name"]
+        return new_gate_name
+    
+    def toggleRobotBase(self,current_robot_base_name):
+        current_idx = next((i for i in range(len(AVAILABLE_BASE)) if AVAILABLE_BASE[i]["name"]==current_base_name),None)
+        if crruent_idx is None:
+            rospy.logwarn("The current base name is invalid")
+            return
+        next_idx = current_idx+1
+        if next_idx >= len(AVAILABLE_BASE):
+            next_idx = 0
+        new_base_name = AVAILABLE_BASE[next_idx]["name"]
+        return new_base_name
+    
+    
     def togglePrismType(self,current_prism_name):
         # current_prism_name = self.LeicaGetPrismType()
         current_idx = next((i for i in range(len(AVAILABLE_PRISMS)) if AVAILABLE_PRISMS[i]["name"]==current_prism_name),None)
