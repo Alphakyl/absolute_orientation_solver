@@ -39,6 +39,8 @@ import threading
 robot_ns = "A99"
 child_frame_id = "gate_leica"
 parent_frame_id = "body_aligned_imu_link"
+kyle_2d = True
+
 
 # Urban: Alpha gate
 # Vgp1 = [0.4425,1.3275 , 0.844]
@@ -722,6 +724,12 @@ class PrismMonitorWidget(QWidget):
             if self.Tgl_found and self.Trl_found:
                 Tgr = tf.transformations.concatenate_matrices(Tgl,tf.transformations.inverse_matrix(Trl))
                 Trg = tf.transformations.inverse_matrix(Tgr)
+                if (kyle_2d):
+                    yaw, pitch, roll = tf.transformations.euler_from_matrix(self.Trg[0:3,0:3], axes="szyx")
+                    print("Projecting 3d transfrom to x-y plane...")
+                    print("New (yaw, pitch, roll) = (%0.4f, %0.4f, %0.4f)" % (yaw*180.0/np.pi, 0.0, 0.0))
+                    R = tf.euler_matrix(yaw, 0.0, 0.0, axes="szyx")
+                    self.Trg[0:3, 0:3] = R
                 self.Trg = Trg
                 if not self.Trg_found:
                     rospy.loginfo("Robot->Gate:\n%s, %s",\
@@ -748,6 +756,7 @@ class PrismMonitorWidget(QWidget):
         # if rospy.wait_for_service(svc_name,timeout=wait_for_svc_timeout):
         set_tf_svc = rospy.ServiceProxy(svc_name, SetTF)
         set_tf_resp = SetTFResponse()
+
         try:
             # rospy.loginfo("Setting Robot->Gate:\n%s",T.__str__())
 
