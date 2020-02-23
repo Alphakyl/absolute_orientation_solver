@@ -48,9 +48,9 @@ kyle_2d = True
 # Vgp3 = [0.462, -1.3115, 0.846]
 
 # Urban: Beta gate
-Vgp1 = [0.4545, 1.324, 0.8445]
-Vgp2 = [0.4265, 0.002, 2.688]
-Vgp3 = [0.441, -1.3405, 0.8425]
+# Vgp1 = [0.4545, 1.324, 0.8445]
+# Vgp2 = [0.4265, 0.002, 2.688]
+# Vgp3 = [0.441, -1.3405, 0.8425]
 
 # large test gate
 # Vgp1 = [0.0,1.523 , 1.07]
@@ -58,14 +58,14 @@ Vgp3 = [0.441, -1.3405, 0.8425]
 # Vgp3 = [0.0, -1.394, 0.755]
 
 # small test gate
-# Vgp1 = [-0.045, 0.100025, 0] # left
-# Vgp2 = [0.045, -0.100025, 0] # top
-# Vgp3 = [-0.045, -0.100025, 0] # right
+Vgp1 = [-0.045, 0.100025, 0] # left
+Vgp2 = [0.045, -0.100025, 0] # top
+Vgp3 = [-0.045, -0.100025, 0] # right
 
 # UGVs w/ base plate v5
-Vrq1 = [-0.045, 0.100025, -0.0045]
-Vrq2 = [0.045, -0.100025, -0.0045]
-Vrq3 = [-0.045, -0.100025, -0.0045]
+# Vrq1 = [-0.045, 0.100025, -0.0045]
+# Vrq2 = [0.045, -0.100025, -0.0045]
+# Vrq3 = [-0.045, -0.100025, -0.0045]
 
 # UAVs on launch pad
 # Vrq1 = [-0.2, 0.25, -0.25]
@@ -73,9 +73,9 @@ Vrq3 = [-0.045, -0.100025, -0.0045]
 # Vrq3 = [-0.2, -0.25, -0.25]
 
 # UAVs on launch pad corrected
-# Vrq1 = [-0.1, .25, -.205]
-# Vrq2 = [0.1,-0.25, -.205]
-# Vrq3 = [-0.1,-.25, -.205]
+Vrq1 = [-0.1, .25, -.205]
+Vrq2 = [0.1,-0.25, -.205]
+Vrq3 = [-0.1,-.25, -.205]
 
 Vgp = [Vgp1,Vgp2,Vgp3]
 Vrq = [Vrq1,Vrq2,Vrq3]
@@ -383,7 +383,7 @@ class PrismMonitorWidget(QWidget):
         # xo = np.array([0,0,0,0,0,0,1])
         xyzy = np.array([0, 0, 0, 0])
         solution = minimize(cost_funz,xyzy,method='L-BFGS-B',args=(v1,v2))
-        solution = minimize(cost_fun,[solution.x[0],solution.x[1],solution.x[2],0,0,solution.x[3],1-solution.x[3]*solution.x[3]],method='L-BFGS-B',args=(v1,v2))
+        solution = minimize(cost_fun,[solution.x[0],solution.x[1],solution.x[2],0,0,solution.x[3],(1-solution.x[3]**2)**(1./2)],method='L-BFGS-B',args=(v1,v2))
         tran_mat = tf.transformations.translation_matrix(np.array([solution.x[0],solution.x[1],solution.x[2]]))
         quat = np.array([solution.x[3],solution.x[4],solution.x[5],solution.x[6]])
         quat = normalize_quaternion(quat) #Vital for Correct Solution
@@ -724,17 +724,18 @@ class PrismMonitorWidget(QWidget):
             if self.Tgl_found and self.Trl_found:
                 Tgr = tf.transformations.concatenate_matrices(Tgl,tf.transformations.inverse_matrix(Trl))
                 Trg = tf.transformations.inverse_matrix(Tgr)
-                if (kyle_2d):
-                    yaw, pitch, roll = tf.transformations.euler_from_matrix(self.Trg[0:3,0:3], axes="szyx")
-                    print("Projecting 3d transfrom to x-y plane...")
-                    print("New (yaw, pitch, roll) = (%0.4f, %0.4f, %0.4f)" % (yaw*180.0/np.pi, 0.0, 0.0))
-                    R = tf.euler_matrix(yaw, 0.0, 0.0, axes="szyx")
-                    self.Trg[0:3, 0:3] = R
                 self.Trg = Trg
                 if not self.Trg_found:
                     rospy.loginfo("Robot->Gate:\n%s, %s",\
                         tf.transformations.translation_from_matrix(Trg).__str__(),\
                         [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(Trg, 'sxyz')].__str__())
+                    if kyle_2d:
+                        rospy.loginfo("Projecting 3d transfrom to x-y plane...")
+                        yaw, pitch, roll = tf.transformations.euler_from_matrix(Trg[0:3,0:3], axes="szyx")
+                        R = tf.transformations.euler_matrix(yaw, 0.0, 0.0, axes="szyx")
+                        Trg[0:3, 0:3] = R[0:3, 0:3]
+                        rospy.loginfo("New (yaw, pitch, roll) = (%0.4f, %0.4f, %0.4f)" % (yaw*180.0/np.pi, 0.0, 0.0))
+                        self.Trg = Trg
                 self.Trg_found = True
             time.sleep(1)
 
