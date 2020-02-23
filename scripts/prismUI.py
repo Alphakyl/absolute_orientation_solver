@@ -42,6 +42,7 @@ parent_frame_id = "body_aligned_imu_link"
 baseB1name = "ugv"
 gateG1name = "alpha"
 kyle_2d = True
+
 # Urban: Alpha gate
 # Vgp1 = [0.4425,1.3275 , 0.844]
 # Vgp2 = [0.4535, -0.001, 2.741]
@@ -73,9 +74,9 @@ kyle_2d = True
 # Vrq3 = [-0.2, -0.25, -0.25]
 
 # UAVs on launch pad corrected
-# Vrq1 = [-0.25, -.1, -.205]
-# Vrq2 = [0.25,0.1, -.205]
-# Vrq3 = [0.25,-.1, -.205]
+Vrq1 = [-0.1, .25, -.205]
+Vrq2 = [0.1,-0.25, -.205]
+Vrq3 = [-0.1,-.25, -.205]
 
 # Vgp = [Vgp1,Vgp2,Vgp3]
 # Vrq = [Vrq1,Vrq2,Vrq3]
@@ -471,7 +472,7 @@ class PrismMonitorWidget(QWidget):
         # xo = np.array([0,0,0,0,0,0,1])
         xyzy = np.array([0, 0, 0, 0])
         solution = minimize(cost_funz,xyzy,method='L-BFGS-B',args=(v1,v2))
-        solution = minimize(cost_fun,[solution.x[0],solution.x[1],solution.x[2],0,0,solution.x[3],1-solution.x[3]*solution.x[3]],method='L-BFGS-B',args=(v1,v2))
+        solution = minimize(cost_fun,[solution.x[0],solution.x[1],solution.x[2],0,0,solution.x[3],(1-solution.x[3]**2)**(1./2)],method='L-BFGS-B',args=(v1,v2))
         tran_mat = tf.transformations.translation_matrix(np.array([solution.x[0],solution.x[1],solution.x[2]]))
         quat = np.array([solution.x[3],solution.x[4],solution.x[5],solution.x[6]])
         quat = normalize_quaternion(quat) #Vital for Correct Solution
@@ -494,7 +495,10 @@ class PrismMonitorWidget(QWidget):
         try:
             rospy.loginfo("Setting to prism: %s",prism_name)
             set_prism_type_req = SetPrismTypeRequest()
-            set_prism_type_req.name = prism_name
+            if prism_name=="micro_360":
+                set_prism_type_req.name = "mini_360"
+            else:
+                set_prism_type_req.name = prism_name
             set_prism_type_resp = set_prism_type_svc(set_prism_type_req)
         except rospy.ServiceException as e:
             rospy.logwarn("Service call failed: %s",e)
@@ -871,6 +875,13 @@ class PrismMonitorWidget(QWidget):
                     rospy.loginfo("Robot->Gate:\n%s, %s",\
                         tf.transformations.translation_from_matrix(Trg).__str__(),\
                         [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(Trg, 'sxyz')].__str__())
+                    if kyle_2d:
+                        rospy.loginfo("Projecting 3d transfrom to x-y plane...")
+                        yaw, pitch, roll = tf.transformations.euler_from_matrix(Trg[0:3,0:3], axes="szyx")
+                        R = tf.transformations.euler_matrix(yaw, 0.0, 0.0, axes="szyx")
+                        Trg[0:3, 0:3] = R[0:3, 0:3]
+                        rospy.loginfo("New (yaw, pitch, roll) = (%0.4f, %0.4f, %0.4f)" % (yaw*180.0/np.pi, 0.0, 0.0))
+                        self.Trg = Trg
                 self.Trg_found = True
             time.sleep(1)
 
@@ -892,6 +903,7 @@ class PrismMonitorWidget(QWidget):
         # if rospy.wait_for_service(svc_name,timeout=wait_for_svc_timeout):
         set_tf_svc = rospy.ServiceProxy(svc_name, SetTF)
         set_tf_resp = SetTFResponse()
+
         try:
             # rospy.loginfo("Setting Robot->Gate:\n%s",T.__str__())
 
