@@ -41,6 +41,7 @@ child_frame_id = "gate_leica"
 parent_frame_id = "body_aligned_imu_link"
 baseB1name = "ugv"
 gateG1name = "alpha"
+kyle_2d = True
 # Urban: Alpha gate
 # Vgp1 = [0.4425,1.3275 , 0.844]
 # Vgp2 = [0.4535, -0.001, 2.741]
@@ -251,7 +252,7 @@ class PrismMonitorWidget(QWidget):
 
         # initial base
         ibaseGroupLayout = QHBoxLayout()
-        ibaseGroup = QGroupBox('Initial Base')
+        ibaseGroup = QGroupBox('Initialize Base')
         self.baseB1toggle = QPushButton('Toggle')
         self.baseB1toggle.clicked.connect(self.baseB1toggle_onclick)
         boxLayout.addWidget(self.baseB1toggle)
@@ -261,13 +262,20 @@ class PrismMonitorWidget(QWidget):
         
         # initial gate
         igateGroupLayout = QHBoxLayout()
-        igateGroup = QGroubBox()
+        igateGroup = QGroubBox('Initialize Gate')
         self.gateG1toggle = QPushButton('Toggle')
         self.gateG1toggle.clicked.connect(self.gateG1toggle_onclick)
         boxLayout.addWidget(self.gateG1toggle)
 
         self.gatelabel = Qlabel(gateG1name)
         boxLayout.addWidget(self.gatelabel)
+
+        # initial zero
+        izeroGroupLayout = QHBoxLayout()
+        izeroGroup = QGroupBox('Initialize 2D or 3D')
+        self.zeroZ1toggle = QPushButton('Toggle')
+        self.zeroZ1toggle.clicked.connect(self.zeroZ1toggle_onclick)
+        boxLayout.addWidget(self.zeroZ1toggle)
 
         # gate group
         prismGroupLayout = QVBoxLayout()
@@ -668,7 +676,14 @@ class PrismMonitorWidget(QWidget):
             else:
                 rospy.logerror("Base name does not exist")
         self.baselabel.setText(baseB1name)
-        
+
+    # on click zero added by kyle
+    def zeroZ1toggle_onclick(self):
+        global kyle_2d
+        if not kyle_2d is None:
+            kyle_2d = not kyle_2d
+        else:
+            rospy.logerror("kyle_2d is none")
 
     def robottoggle_onclick(self):
         global robot_ns
