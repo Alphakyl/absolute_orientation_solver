@@ -39,7 +39,8 @@ import threading
 robot_ns = "A99"
 child_frame_id = "gate_leica"
 parent_frame_id = "body_aligned_imu_link"
-
+baseB1name = "ugv"
+gateG1name = "alpha"
 # Urban: Alpha gate
 # Vgp1 = [0.4425,1.3275 , 0.844]
 # Vgp2 = [0.4535, -0.001, 2.741]
@@ -56,14 +57,14 @@ parent_frame_id = "body_aligned_imu_link"
 # Vgp3 = [0.0, -1.394, 0.755]
 
 # small test gate
-Vgp1 = [-0.045, 0.100025, 0] # left
-Vgp2 = [0.045, -0.100025, 0] # top
-Vgp3 = [-0.045, -0.100025, 0] # right
+# Vgp1 = [-0.045, 0.100025, 0] # left
+# Vgp2 = [0.045, -0.100025, 0] # top
+# Vgp3 = [-0.045, -0.100025, 0] # right
 
 # UGVs w/ base plate v5
-Vrq1 = [-0.045, 0.100025, -0.0045]
-Vrq2 = [0.045, -0.100025, -0.0045]
-Vrq3 = [-0.045, -0.100025, -0.0045]
+# Vrq1 = [-0.045, 0.100025, -0.0045]
+# Vrq2 = [0.045, -0.100025, -0.0045]
+# Vrq3 = [-0.045, -0.100025, -0.0045]
 
 # UAVs on launch pad
 # Vrq1 = [-0.2, 0.25, -0.25]
@@ -75,8 +76,8 @@ Vrq3 = [-0.045, -0.100025, -0.0045]
 # Vrq2 = [0.25,0.1, -.205]
 # Vrq3 = [0.25,-.1, -.205]
 
-Vgp = [Vgp1,Vgp2,Vgp3]
-Vrq = [Vrq1,Vrq2,Vrq3]
+# Vgp = [Vgp1,Vgp2,Vgp3]
+# Vrq = [Vrq1,Vrq2,Vrq3]
 Vlp = [[None]*3 for i in range(3)]
 Vlq = [[None]*3 for i in range(3)]
 
@@ -108,6 +109,38 @@ AVAILABLE_PRISMS = [
 ]
 
 AVAILABLE_ROBOTS = ["H01","H02","H03","T01","T02","T03","L01","A01","A02","A03","A99"]
+
+# List of base dictionaries added by Kyle
+AVAILABLE_BASE = [
+    {
+        "name"      : "ugv",
+        "Vrq1"      : [-0.045, 0.100025, -0.0045],
+        "Vrq2"      : [0.045, -0.100025, -0.0045],
+        "Vrq3"      : [-0.045, -0.100025, -0.0045],
+    },
+    {
+        "name"      : "uav",
+        "Vrq1"      : [-0.25, -.1, -.205],
+        "Vrq2"      : [0.25,0.1, -.205],
+        "Vrq3"      : [0.25,-.1, -.205],
+    }
+]
+
+# List of gate dictionaries added by Kyle
+AVAILABLE_GATES = [
+    {
+        "name"      : "alpha",
+        "Vgp1"      : [0.4425,1.3275 , 0.844],
+        "Vgp2"      : [0.4535, -0.001, 2.741],
+        "Vgp3"      : [0.462, -1.3115, 0.846],
+    },
+    {
+        "name"      : "beta",
+        "Vgp1"      : [0.4545, 1.324, 0.8445],
+        "Vgp2"      : [0.4265, 0.002, 2.688],
+        "Vgp3"      : [0.441, -1.3405, 0.8425],
+    },
+]
 
 def cost_fun(x,v1,v2):
     v1 = map(list, zip(*v1))
@@ -180,12 +213,37 @@ class PrismMonitorWidget(QWidget):
     # counter = 0
 
     def __init__(self,parent = None):
-        global robot_ns
+        global robot_ns, baseB1name, gateG1name
         # self.counter = 0
         # self.Current_P = prism_tf()
 
         super(PrismMonitorWidget,self).__init__()
         layout = QVBoxLayout()
+
+        # Begin GUI edits added by Kyle
+        # initial group
+        initialGroupLayout = QVBoxLayout()
+        initialGroup = QGroupBox('Initialization')
+
+        # initial base
+        ibaseGroupLayout = QHBoxLayout()
+        ibaseGroup = QGroupBox('Initial Base')
+        self.baseB1toggle = QPushButton('Toggle')
+        self.baseB1toggle.clicked.connect(self.baseB1toggle_onclick)
+        boxLayout.addWidget(self.baseB1toggle)
+
+        self.baselabel = QLabel(baseB1name)
+        boxLayout.addWidget(self.baselabel)
+        
+        # initial gate
+        igateGroupLayout = QHBoxLayout()
+        igateGroup = QGroubBox()
+        self.gateG1toggle = QPushButton('Toggle')
+        self.gateG1toggle.clicked.connect(self.gateG1toggle_onclick)
+        boxLayout.addWidget(self.gateG1toggle)
+
+        self.gatelabel = Qlabel(gateG1name)
+        boxLayout.addWidget(self.gatelabel)
 
         # gate group
         prismGroupLayout = QVBoxLayout()
@@ -515,6 +573,7 @@ class PrismMonitorWidget(QWidget):
             self.LeicaStopTracking()
         return pos
 
+    # Added by Kyle, gate type toggle
     def toggleGateType(self, current_gate_name):
         current_idx = next((i for i in range(len(AVAILABLE_GATES)) if AVAILABLE_GATES[i]["name"]==current_gate_name),None)
         if current_idx is None:
@@ -525,10 +584,11 @@ class PrismMonitorWidget(QWidget):
             next_idx = 0
         new_gate_name = AVAILABLE_GATES[next_idx]["name"]
         return new_gate_name
-    
+
+    # Added by Kyle, base type toggle 
     def toggleRobotBase(self,current_robot_base_name):
         current_idx = next((i for i in range(len(AVAILABLE_BASE)) if AVAILABLE_BASE[i]["name"]==current_base_name),None)
-        if crruent_idx is None:
+        if current_idx is None:
             rospy.logwarn("The current base name is invalid")
             return
         next_idx = current_idx+1
@@ -560,6 +620,19 @@ class PrismMonitorWidget(QWidget):
             next_idx = 0
         new_robot_name = AVAILABLE_ROBOTS[next_idx]
         return new_robot_name
+    
+    # on click gate added by Kyle
+    def gateG1toggle_onclick(self):
+        global gateG1name
+        gateG1name = self.toggleGateType(self.gateG1name)
+        self.gatelabel.setText(gateG1name)
+    
+    # on click base added by Kyle
+    def baseB1toggle_onclick(self):
+        global baseB1name
+        baseB1name = self.toggleRobotBase(self.baseB1name)
+        self.baselabel.setText(baseB1name)
+        
 
     def robottoggle_onclick(self):
         global robot_ns
