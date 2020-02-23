@@ -78,6 +78,8 @@ gateG1name = "alpha"
 
 # Vgp = [Vgp1,Vgp2,Vgp3]
 # Vrq = [Vrq1,Vrq2,Vrq3]
+Vgp = [[None]*3 for i in range(3)]
+Vrq = [[None]*3 for i in range(3)]
 Vlp = [[None]*3 for i in range(3)]
 Vlq = [[None]*3 for i in range(3)]
 
@@ -140,7 +142,29 @@ AVAILABLE_GATES = [
         "Vgp2"      : [0.4265, 0.002, 2.688],
         "Vgp3"      : [0.441, -1.3405, 0.8425],
     },
+    {
+        "name"      : "small",
+        "Vgp1"      : [-0.045, 0.100025, 0], # left
+        "Vgp2"      : [0.045, -0.100025, 0], # top
+        "Vgp3"      : [-0.045, -0.100025, 0], # right
+    }
 ]
+
+# Define Vgp and Vrq added by Kyle
+
+for i in range(len(AVAILABLE_GATES)):
+    if AVAILABLE_PRISMS[i]["name"]==gateG1name:
+        Vgp = [AVAILABLE_GATES[i]["Vgp1"], AVAILABLE_GATES[i]["Vgp2"], AVAILABLE_GATES[i]["Vgp3"]]
+        break
+    else:
+        rospy.logerror("Gate name does not exist")
+
+for i in range(len(AVAILABLE_BASE)):
+    if AVAILABLE_BASE[i]["name"]==baseB1name:
+        Vrq = [AVAILABLE_BASE[i]["Vrq1"], AVAILABLE_GATES[i]["Vrq2"], AVAILABLE_GATES[i]["Vrq3"]]
+        break
+    else:
+        rospy.logerror("Base name does not exist")
 
 def cost_fun(x,v1,v2):
     v1 = map(list, zip(*v1))
@@ -623,14 +647,26 @@ class PrismMonitorWidget(QWidget):
     
     # on click gate added by Kyle
     def gateG1toggle_onclick(self):
-        global gateG1name
-        gateG1name = self.toggleGateType(self.gateG1name)
+        global gateG1name, Vgp
+        gateG1name = self.toggleGateType(gateG1name)
+        for i in range(len(AVAILABLE_GATES)):
+            if AVAILABLE_PRISMS[i]["name"]==gateG1name:
+                Vgp = [AVAILABLE_GATES[i]["Vgp1"], AVAILABLE_GATES[i]["Vgp2"], AVAILABLE_GATES[i]["Vgp3"]]
+                break
+            else:
+                rospy.logerror("Gate name does not exist")
         self.gatelabel.setText(gateG1name)
     
     # on click base added by Kyle
     def baseB1toggle_onclick(self):
-        global baseB1name
-        baseB1name = self.toggleRobotBase(self.baseB1name)
+        global baseB1name, Vrq
+        baseB1name = self.toggleRobotBase(baseB1name)
+        for i in range(len(AVAILABLE_BASE)):
+            if AVAILABLE_BASE[i]["name"]==baseB1name:
+                Vrq = [AVAILABLE_BASE[i]["Vrq1"], AVAILABLE_GATES[i]["Vrq2"], AVAILABLE_GATES[i]["Vrq3"]]
+                break
+            else:
+                rospy.logerror("Base name does not exist")
         self.baselabel.setText(baseB1name)
         
 
