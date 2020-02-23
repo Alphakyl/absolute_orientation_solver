@@ -159,14 +159,16 @@ for i in range(len(AVAILABLE_GATES)):
         Vgp = [AVAILABLE_GATES[i]["Vgp1"], AVAILABLE_GATES[i]["Vgp2"], AVAILABLE_GATES[i]["Vgp3"]]
         break
     else:
-        rospy.logerror("Gate name does not exist")
+        print "Gate name does not exist"
+        #rospy.logerror("Gate name does not exist")
 
 for i in range(len(AVAILABLE_BASE)):
     if AVAILABLE_BASE[i]["name"]==baseB1name:
         Vrq = [AVAILABLE_BASE[i]["Vrq1"], AVAILABLE_GATES[i]["Vrq2"], AVAILABLE_GATES[i]["Vrq3"]]
         break
     else:
-        rospy.logerror("Base name does not exist")
+        #rospy.logerror("Base name does not exist")
+        print "Gate name does not exist"
 
 def cost_fun(x,v1,v2):
     v1 = map(list, zip(*v1))
