@@ -46,9 +46,9 @@ parent_frame_id = "body_aligned_imu_link"
 # Vgp3 = [0.462, -1.3115, 0.846]
 
 # Urban: Beta gate
-# Vgp1 = [0.4545, 1.324, 0.8445]
-# Vgp2 = [0.4265, 0.002, 2.688]
-# Vgp3 = [0.441, -1.3405, 0.8425]
+Vgp1 = [0.4545, 1.324, 0.8445]
+Vgp2 = [0.4265, 0.002, 2.688]
+Vgp3 = [0.441, -1.3405, 0.8425]
 
 # large test gate
 # Vgp1 = [0.0,1.523 , 1.07]
@@ -56,9 +56,9 @@ parent_frame_id = "body_aligned_imu_link"
 # Vgp3 = [0.0, -1.394, 0.755]
 
 # small test gate
-Vgp1 = [-0.045, 0.100025, 0] # left
-Vgp2 = [0.045, -0.100025, 0] # top
-Vgp3 = [-0.045, -0.100025, 0] # right
+# Vgp1 = [-0.045, 0.100025, 0] # left
+# Vgp2 = [0.045, -0.100025, 0] # top
+# Vgp3 = [-0.045, -0.100025, 0] # right
 
 # UGVs w/ base plate v5
 Vrq1 = [-0.045, 0.100025, -0.0045]
@@ -71,9 +71,9 @@ Vrq3 = [-0.045, -0.100025, -0.0045]
 # Vrq3 = [-0.2, -0.25, -0.25]
 
 # UAVs on launch pad corrected
-# Vrq1 = [-0.25, -.1, -.205]
-# Vrq2 = [0.25,0.1, -.205]
-# Vrq3 = [0.25,-.1, -.205]
+# Vrq1 = [-0.1, .25, -.205]
+# Vrq2 = [0.1,-0.25, -.205]
+# Vrq3 = [-0.1,-.25, -.205]
 
 Vgp = [Vgp1,Vgp2,Vgp3]
 Vrq = [Vrq1,Vrq2,Vrq3]
@@ -404,7 +404,10 @@ class PrismMonitorWidget(QWidget):
         try:
             rospy.loginfo("Setting to prism: %s",prism_name)
             set_prism_type_req = SetPrismTypeRequest()
-            set_prism_type_req.name = prism_name
+            if prism_name=="micro_360":
+                set_prism_type_req.name = "mini_360"
+            else:
+                set_prism_type_req.name = prism_name
             set_prism_type_resp = set_prism_type_svc(set_prism_type_req)
         except rospy.ServiceException as e:
             rospy.logwarn("Service call failed: %s",e)
