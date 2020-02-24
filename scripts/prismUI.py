@@ -63,9 +63,9 @@ Vgp2 = [0.045, -0.100025, 0] # top
 Vgp3 = [-0.045, -0.100025, 0] # right
 
 # UGVs w/ base plate v5
-# Vrq1 = [-0.045, 0.100025, -0.0045]
-# Vrq2 = [0.045, -0.100025, -0.0045]
-# Vrq3 = [-0.045, -0.100025, -0.0045]
+Vrq1 = [-0.045, 0.100025, -0.0045]
+Vrq2 = [0.045, -0.100025, -0.0045]
+Vrq3 = [-0.045, -0.100025, -0.0045]
 
 # UAVs on launch pad
 # Vrq1 = [-0.2, 0.25, -0.25]
@@ -73,9 +73,9 @@ Vgp3 = [-0.045, -0.100025, 0] # right
 # Vrq3 = [-0.2, -0.25, -0.25]
 
 # UAVs on launch pad corrected
-Vrq1 = [-0.1, .25, -.205]
-Vrq2 = [0.1,-0.25, -.205]
-Vrq3 = [-0.1,-.25, -.205]
+# Vrq1 = [-0.1, .25, -.205]
+# Vrq2 = [0.1,-0.25, -.205]
+# Vrq3 = [-0.1,-.25, -.205]
 
 Vgp = [Vgp1,Vgp2,Vgp3]
 Vrq = [Vrq1,Vrq2,Vrq3]
@@ -724,18 +724,21 @@ class PrismMonitorWidget(QWidget):
             if self.Tgl_found and self.Trl_found:
                 Tgr = tf.transformations.concatenate_matrices(Tgl,tf.transformations.inverse_matrix(Trl))
                 Trg = tf.transformations.inverse_matrix(Tgr)
-                self.Trg = Trg
+                if kyle_2d:
+                    yaw, pitch, roll = tf.transformations.euler_from_matrix(Trg[0:3,0:3], axes="szyx")
+                    R = tf.transformations.euler_matrix(yaw, 0.0, 0.0, axes="szyx")
+                    Trg_2d = np.copy(Trg)
+                    Trg_2d[0:3, 0:3] = R[0:3, 0:3]
+                    self.Trg = Trg_2d
+                else:
+                    self.Trg = Trg
                 if not self.Trg_found:
                     rospy.loginfo("Robot->Gate:\n%s, %s",\
                         tf.transformations.translation_from_matrix(Trg).__str__(),\
                         [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(Trg, 'sxyz')].__str__())
                     if kyle_2d:
                         rospy.loginfo("Projecting 3d transfrom to x-y plane...")
-                        yaw, pitch, roll = tf.transformations.euler_from_matrix(Trg[0:3,0:3], axes="szyx")
-                        R = tf.transformations.euler_matrix(yaw, 0.0, 0.0, axes="szyx")
-                        Trg[0:3, 0:3] = R[0:3, 0:3]
                         rospy.loginfo("New (yaw, pitch, roll) = (%0.4f, %0.4f, %0.4f)" % (yaw*180.0/np.pi, 0.0, 0.0))
-                        self.Trg = Trg
                 self.Trg_found = True
             time.sleep(1)
 
