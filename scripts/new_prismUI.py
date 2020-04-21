@@ -39,72 +39,63 @@ base_name = "ugv"
 gate_name = "alpha"
 kyle_2d = True
 
-AVAILABLE_PRISMS = [
-    {
-        "name"     : "big_360",
+AVAILABLE_PRISMS = {
+    "big_360": {
         "num"      : 3,
         "constant" : 34.4,
         "z"        : 0.0
-    },
-    {
-        "name"     : "mini_360",
+        },
+    "mini_360": {
         "num"      : 7,
         "constant" : 30.0, 
-        "z"        : 0.02159,
-    },
-    {
-        "name"     : "micro_360",
-        "num"      : 7,
+        "z"        : 0.02159
+        },
+    "micro_360": {
+        "num"     : 7,
         "constant" : 30.0,
-        "z"        : 0.01524,
-    },
-    {
-        "name"     : "mini_lp",
-        "num"      : 1,
+        "z"        : 0.01524
+        },
+    "mini_lp":  {
+        "num"     : 1,
         "constant" : 17.5,
-        "z"        : 0.0,
-    }
-]
+        "z"        : 0.0
+        }
+}
 
 AVAILABLE_ROBOTS = ["H01","H02","H03","T01","T02","T03","L01","A01","A02","A03","A99"]
 
 # List of base dictionaries added by Kyle
-AVAILABLE_BASE = [
-    {
-        "name"      : "ugv",
+AVAILABLE_BASE = {
+    "ugv": {
         "Vrq1"      : [-0.045, 0.100025, -0.0045],
         "Vrq2"      : [0.045, -0.100025, -0.0045],
         "Vrq3"      : [-0.045, -0.100025, -0.0045],
     },
-    {
-        "name"      : "uav",
+    "uav": {
         "Vrq1"      : [-0.25, -.1, -.205],
         "Vrq2"      : [0.25,0.1, -.205],
         "Vrq3"      : [0.25,-.1, -.205],
     }
-]
+}
 
 # List of gate dictionaries added by Kyle
-AVAILABLE_GATES = [
-    {
-        "name"      : "alpha",
+AVAILABLE_GATES = {
+    "alpha": {
         "Vgp1"      : [0.4425,1.3275 , 0.844],
         "Vgp2"      : [0.4535, -0.001, 2.741],
         "Vgp3"      : [0.462, -1.3115, 0.846],
     },
-    {
-        "name"      : "beta",
+    "beta": {
         "Vgp1"      : [0.4545, 1.324, 0.8445],
         "Vgp2"      : [0.4265, 0.002, 2.688],
         "Vgp3"      : [0.441, -1.3405, 0.8425],
     },
-    {
-        "name"      : "small",
+    "small": {
         "Vgp1"      : [-0.045, 0.100025, 0], # left
         "Vgp2"      : [0.045, -0.100025, 0], # top
         "Vgp3"      : [-0.045, -0.100025, 0], # right
     }
-]
+}
 
 class PrismMonitorWidget(QMainWindow):
     def __init__(self,parent = None):
