@@ -5,7 +5,8 @@ import tf
 #!/usr/bin/python2
 """
 Horn's Formuala : https://www.mathworks.com/matlabcentral/fileexchange/26186-absolute-orientation-horn-s-method
-Horn's Method
+Horn's Method for Absolute Orientation: https://www.osapublishing.org/josaa/abstract.cfm?uri=josaa-4-4-629 
+See Also: Kabsch Algorithm https://en.wikipedia.org/wiki/Kabsch_algorithm#cite_note-1
 """
 
 def horns_method(v1,v2):
@@ -50,7 +51,6 @@ def horns_method(v1,v2):
     quat_mat = tf.transformations.quaternion_matrix(rot[1], rot[2], rot[3], rot[0])
     
     # Need to solve for the translation and error
-    
     trans = tf.transformations.translation_matrix(c2+[0]-scale_matrix(s,np.dot(quat_mat,c1+[0])))
     solution = numpy.dot(trans,quat_matrix)
     v1 = [v1+[0] for col in range(np.size(v1,1))]
