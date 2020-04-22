@@ -4,10 +4,10 @@ import tf
 
 #!/usr/bin/python2
 """
-Leica UI node to monitor the prism data
-
 Horn's Formuala : https://www.mathworks.com/matlabcentral/fileexchange/26186-absolute-orientation-horn-s-method
+Horn's Method
 """
+
 def horns_method(v1,v2):
     # Define pt arrays [[x],[y],...,[z]]
     v1 = np.array(v1).T
@@ -21,12 +21,12 @@ def horns_method(v1,v2):
     v2_prime = v2-c2[:,np.newaxis]
 
     # Determine the scale factor = sqrt(sum ||v2,i||^2/sum||v1,i||^2)
-    S1 = np.sum([np.dot(v1[:,col],v1[:,col]) for col in range(np.size(v1,1))])
-    S2 = np.sum([np.dot(v2[:,col],v2[:,col]) for col in range(np.size(v2,1))])
+    S1 = np.sum([np.dot(v1_prime[:,col],v1_prime[:,col]) for col in range(np.size(v1,1))])
+    S2 = np.sum([np.dot(v2_prime[:,col],v2_prime[:,col]) for col in range(np.size(v2,1))])
     s = sqrt(S2/S1)
 
     # Determine M = [[S_xx S_xy S_xz], [Syx Syy Syz], [Szx Szy Szz]]
-    M = np.dot(v1,v2.T)
+    M = np.dot(v1_prime,v2_prime.T)
     S_xx = M[0,0]
     S_xy = M[0,1]
     S_xz = M[0,2]
@@ -45,12 +45,17 @@ def horns_method(v1,v2):
     
     # Rotation quaternion vector is the eigenvector of the most positive eigen value of N
     eig_val,eig_vec = np.linalg.eig(N)
+    # rot = [w, x, y, z]
     rot = eig_vec[:,np.argmax(eig_val)]
-    quat_mat = tf.transformations.quaternion_matrix(rot)
+    quat_mat = tf.transformations.quaternion_matrix(rot[1], rot[2], rot[3], rot[0])
     
     # Need to solve for the translation and error
-
-    #trans = tf.transformations.translation_matrix(c2+[1]-scale_matrix(np.dot(quat_mat,c1+[1])))
+    
+    trans = tf.transformations.translation_matrix(c2+[0]-scale_matrix(s,np.dot(quat_mat,c1+[0])))
+    solution = numpy.dot(trans,quat_matrix)
+    v1 = [v1+[0] for col in range(np.size(v1,1))]
+    v2 = [v2+[0] for col in range(np.size(v2,1))]
+    error = np.sum([np.dot(v2[:,col]-scale_matrix(s,np.dot(quat_mat,v1[:,col]))-trans,v2[:,col]-scale_matrix(s,np.dot(quat_mat,v1[:,col]))-trans) for col in range(np.size(v1,1))])
     return error, solution
 
 # def cost_fun(x,v1,v2):
@@ -82,41 +87,6 @@ def horns_method(v1,v2):
 def normalize_quaternion(rot):
     ratio = math.sqrt(rot[0]**2 + rot[1]**2 + rot[2]**2 + rot[3]**2)
     return (rot[0]/ratio, rot[1]/ratio, rot[2]/ratio, rot[3]/ratio)
-
-# def mtf(trans1, rot1, trans2, rot2):
-
-#     trans1_mat = tf.transformations.translation_matrix(trans1)
-#     rot1_mat   = tf.transformations.quaternion_matrix(rot1)
-#     mat1 = np.dot(trans1_mat, rot1_mat)
-
-#     trans2_mat = tf.transformations.translation_matrix(trans2)
-#     rot2_mat    = tf.transformations.quaternion_matrix(rot2)
-#     mat2 = np.dot(trans2_mat, rot2_mat)
-
-#     mat3 = np.dot(mat1, mat2)
-#     trans3 = tf.transformations.translation_from_matrix(mat3)
-#     rot3 = tf.transformations.quaternion_from_matrix(mat3)
-
-#     return trans3, rot3
-
-# def multiply_tfs(trans1, rot1, trans2, rot2,mmn):
-    
-
-#     trans1_mat = tf.transformations.translation_matrix(trans1)    
-#     rot1_mat   = tf.transformations.quaternion_matrix(rot1)
-#     mat1 = np.dot(trans1_mat, rot1_mat)
-
-#     trans2_mat = tf.transformations.translation_matrix(trans2)    
-#     rot2_mat    = tf.transformations.quaternion_matrix(rot2)
-#     mat2 = np.dot(trans2_mat, rot2_mat)   
-
-#     m = np.dot(mat1,mmn)
-#     mat3 = np.dot(m,mat2)
-    
-#     trans3 = tf.transformations.translation_from_matrix(mat3)
-#     rot3 = tf.transformations.quaternion_from_matrix(mat3)
-
-#     return trans3, rot3
 
 def solveForT(self,v1,v2):
     # Appends 1 to the end of each point
