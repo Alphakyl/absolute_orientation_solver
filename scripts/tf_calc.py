@@ -19,6 +19,7 @@ def horns_method(v1,v2):
     c1 = c1[:,np.newaxis]
     c2 = np.sum(v2,1)/np.size(v2,2)
     c2 = c2[:,np.newaxis]
+
     # Update coordinates by removing their centroids
     v1_prime = v1-c1
     v2_prime = v2-c2
@@ -52,72 +53,29 @@ def horns_method(v1,v2):
     rot = eig_vec[:,np.argmax(eig_val)]
     quat_mat = tf.transformations.quaternion_matrix(rot[1], rot[2], rot[3], rot[0])
     
-    # Need to solve for the translation and error
+    # Solve for translation based on difference of transformed centroids
     c1 = np.append(c1,np.zeros((1,np.size(c1,1))),axis=0)
     c2 = np.append(c2,np.zeros((1,np.size(c2,1))),axis=0)
     trans = c2-s*np.dot(quat_mat,c1)
     trans_mat = tf.transformations.translation_matrix(trans)
+
+    # Full solution from rotation and translation matrix
     solution = numpy.dot(trans_mat,quat_matrix)
+
+    # Solve for residuals and error
     v1 = np.append(v1,np.zeros((1,np.size(v1,1))), axis=0)
     v2 = np.append(v2,np.zeros((1,np.size(v2,1))), axis=0)
     residuals = v2-np.dot(solution,v1)
     error = np.sum([np.dot(residuals[:,col],residuals[:,col]) for col in range(np.size(v1,1))])
+    
+    # Return error and solution
     return error, solution
 
-# def cost_fun(x,v1,v2):
-#     v1 = map(list, zip(*v1))
-#     v2 = map(list, zip(*v2))
-#     # print v1
-#     # print v2
-#     t_mat = tf.transformations.translation_matrix(np.array([x[0],x[1],x[2]]))
-#     q_mat = tf.transformations.quaternion_matrix(normalize_quaternion(np.array([x[3], x[4], x[5],x[6]])))
-#     mat = np.dot(t_mat, q_mat)
-#     err_mat = v1-np.dot(mat,v2)
-#     # print err_mat
-#     err_norm = LA.norm(err_mat[:,0])+LA.norm(err_mat[:,1])+LA.norm(err_mat[:,2])   
-#     return err_norm
-
-# def cost_funz(x,v1,v2):
-#     v1 = map(list, zip(*v1))
-#     v2 = map(list, zip(*v2))
-#     # print v1
-#     # print v2
-#     t_mat = tf.transformations.translation_matrix(np.array([x[0],x[1],x[2]]))
-#     q_mat = tf.transformations.quaternion_matrix(normalize_quaternion(np.array([0, 0, x[3], 1-x[3]*x[3]])))
-#     mat = np.dot(t_mat, q_mat)
-#     err_mat = v1-np.dot(mat,v2)
-#     # print err_mat
-#     err_norm = LA.norm(err_mat[:,0])+LA.norm(err_mat[:,1])+LA.norm(err_mat[:,2])   
-#     return err_norm
-
-# def normalize_quaternion(rot):
-#     ratio = math.sqrt(rot[0]**2 + rot[1]**2 + rot[2]**2 + rot[3]**2)
-#     return (rot[0]/ratio, rot[1]/ratio, rot[2]/ratio, rot[3]/ratio)
-
 def solveForT(self,v1,v2):
-    # Appends 1 to the end of each point
-    # v1 = [pt+[1] for pt in v1]
-    # v2 = [pt+[1] for pt in v2]
-        
     # Minimize using horns method
     error, solution = horns_method(v1,v2)
-
-    # xo = np.array([0,0,0,0,0,0,1])
-    # xyzy = np.array([0, 0, 0, 0])
-    # solution = minimize(cost_funz,xyzy,method='L-BFGS-B',args=(v1,v2))
-    # solution = minimize(cost_fun,[solution.x[0],solution.x[1],solution.x[2],0,0,solution.x[3],(1-solution.x[3]**2)**(1./2)],method='L-BFGS-B',args=(v1,v2))
- 
-    # Convert xyz difference to matrix
-    #tran_mat = tf.transformations.translation_matrix(np.array([solution.x[0],solution.x[1],solution.x[2]]))
-    # Convert rotation quaternion
-    #quat = np.array([solution.x[3],solution.x[4],solution.x[5],solution.x[6]])
-    #quat = normalize_quaternion(quat) #Vital for Correct Solution
-    # Convert to quaternionr rotation matrix
-    #quat_mat = tf.transformations.quaternion_matrix(np.array(quat))
-    # Set full solution to matrix form
-    #T12 = tf.transformations.concatenate_matrices(tran_mat,quat_mat)
-
-    #return T12
+    print "Calculated Error:"
+    print error
     return solution
 
 def calcTF(self):   #Robot_origin->World Publisher
