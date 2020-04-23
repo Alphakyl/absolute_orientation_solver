@@ -15,16 +15,18 @@ def horns_method(v1,v2):
     v2 = np.array(v2).T
     
     # Calculate centroids
-    c1 = np.sum(v1,1)/3
-    c2 = np.sum(v2,1)/3
+    c1 = np.sum(v1,1)/np.size(v1,1)
+    c1 = c1[:,np.newaxis]
+    c2 = np.sum(v2,1)/np.size(v2,2)
+    c2 = c2[:,np.newaxis]
     # Update coordinates by removing their centroids
-    v1_prime = v1-c1[:,np.newaxis]
-    v2_prime = v2-c2[:,np.newaxis]
+    v1_prime = v1-c1
+    v2_prime = v2-c2
 
     # Determine the scale factor = sqrt(sum ||v2,i||^2/sum||v1,i||^2)
     S1 = np.sum([np.dot(v1_prime[:,col],v1_prime[:,col]) for col in range(np.size(v1,1))])
     S2 = np.sum([np.dot(v2_prime[:,col],v2_prime[:,col]) for col in range(np.size(v2,1))])
-    s = sqrt(S2/S1)
+    s = np.sqrt(S2/S1)
 
     # Determine M = [[S_xx S_xy S_xz], [Syx Syy Syz], [Szx Szy Szz]]
     M = np.dot(v1_prime,v2_prime.T)
@@ -51,11 +53,15 @@ def horns_method(v1,v2):
     quat_mat = tf.transformations.quaternion_matrix(rot[1], rot[2], rot[3], rot[0])
     
     # Need to solve for the translation and error
-    trans = tf.transformations.translation_matrix(c2+[0]-scale_matrix(s,np.dot(quat_mat,c1+[0])))
-    solution = numpy.dot(trans,quat_matrix)
-    v1 = [v1+[0] for col in range(np.size(v1,1))]
-    v2 = [v2+[0] for col in range(np.size(v2,1))]
-    error = np.sum([np.dot(v2[:,col]-scale_matrix(s,np.dot(quat_mat,v1[:,col]))-trans,v2[:,col]-scale_matrix(s,np.dot(quat_mat,v1[:,col]))-trans) for col in range(np.size(v1,1))])
+    c1 = np.append(c1,np.zeros((1,np.size(c1,1))),axis=0)
+    c2 = np.append(c2,np.zeros((1,np.size(c2,1))),axis=0)
+    trans = c2-s*np.dot(quat_mat,c1)
+    trans_mat = tf.transformations.translation_matrix(trans)
+    solution = numpy.dot(trans_mat,quat_matrix)
+    v1 = np.append(v1,np.zeros((1,np.size(v1,1))), axis=0)
+    v2 = np.append(v2,np.zeros((1,np.size(v2,1))), axis=0)
+    residuals = v2-np.dot(solution,v1)
+    error = np.sum([np.dot(residuals[:,col],residuals[:,col]) for col in range(np.size(v1,1))])
     return error, solution
 
 # def cost_fun(x,v1,v2):
