@@ -1,8 +1,8 @@
+#!/usr/bin/python2
 import numpy as np
 import rospy
 import tf
 
-#!/usr/bin/python2
 """
 Horn's Formuala : https://www.mathworks.com/matlabcentral/fileexchange/26186-absolute-orientation-horn-s-method
 Horn's Method for Absolute Orientation: https://www.osapublishing.org/josaa/abstract.cfm?uri=josaa-4-4-629 
@@ -90,9 +90,9 @@ def horns_method(v1,v2):
 #     err_norm = LA.norm(err_mat[:,0])+LA.norm(err_mat[:,1])+LA.norm(err_mat[:,2])   
 #     return err_norm
 
-def normalize_quaternion(rot):
-    ratio = math.sqrt(rot[0]**2 + rot[1]**2 + rot[2]**2 + rot[3]**2)
-    return (rot[0]/ratio, rot[1]/ratio, rot[2]/ratio, rot[3]/ratio)
+# def normalize_quaternion(rot):
+#     ratio = math.sqrt(rot[0]**2 + rot[1]**2 + rot[2]**2 + rot[3]**2)
+#     return (rot[0]/ratio, rot[1]/ratio, rot[2]/ratio, rot[3]/ratio)
 
 def solveForT(self,v1,v2):
     # Appends 1 to the end of each point
@@ -108,16 +108,17 @@ def solveForT(self,v1,v2):
     # solution = minimize(cost_fun,[solution.x[0],solution.x[1],solution.x[2],0,0,solution.x[3],(1-solution.x[3]**2)**(1./2)],method='L-BFGS-B',args=(v1,v2))
  
     # Convert xyz difference to matrix
-    tran_mat = tf.transformations.translation_matrix(np.array([solution.x[0],solution.x[1],solution.x[2]]))
+    #tran_mat = tf.transformations.translation_matrix(np.array([solution.x[0],solution.x[1],solution.x[2]]))
     # Convert rotation quaternion
-    quat = np.array([solution.x[3],solution.x[4],solution.x[5],solution.x[6]])
-    quat = normalize_quaternion(quat) #Vital for Correct Solution
+    #quat = np.array([solution.x[3],solution.x[4],solution.x[5],solution.x[6]])
+    #quat = normalize_quaternion(quat) #Vital for Correct Solution
     # Convert to quaternionr rotation matrix
-    quat_mat = tf.transformations.quaternion_matrix(np.array(quat))
+    #quat_mat = tf.transformations.quaternion_matrix(np.array(quat))
     # Set full solution to matrix form
-    T12 = tf.transformations.concatenate_matrices(tran_mat,quat_mat)
+    #T12 = tf.transformations.concatenate_matrices(tran_mat,quat_mat)
 
-    return T12
+    #return T12
+    return solution
 
 def calcTF(self):   #Robot_origin->World Publisher
         global Vgp,Vlp,Vrq,Vlq,Tgr
