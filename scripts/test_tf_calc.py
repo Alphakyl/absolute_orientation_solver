@@ -35,68 +35,6 @@ AVAILABLE_GATES = [
 ]
 
 
-
-############### TF_CACL.py code #################################
-
-def cost_fun(x,v1,v2):
-    v1 = map(list, zip(*v1))
-    v2 = map(list, zip(*v2))
-    # print v1
-    # print v2
-    t_mat = tf.transformations.translation_matrix(np.array([x[0],x[1],x[2]]))
-    q_mat = tf.transformations.quaternion_matrix(normalize_quaternion(np.array([x[3], x[4], x[5],x[6]])))
-    mat = np.dot(t_mat, q_mat)
-    err_mat = v1-np.dot(mat,v2)
-    # print err_mat
-    err_norm = LA.norm(err_mat[:,0])+LA.norm(err_mat[:,1])+LA.norm(err_mat[:,2])   
-    return err_norm
-
-def cost_funz(x,v1,v2):
-    v1 = map(list, zip(*v1))
-    v2 = map(list, zip(*v2))
-    print v1
-    print v2[0][0], v2[0][1], v2[0][2], v2[0][3]
-    #v1 = v1[:,np.newaxis]
-    v2 = np.array([ [v2[0][0]], [v2[0][1]], [v2[0][2]], [v2[0][3]] ])
-    # print x
-    t_mat = transformations.translation_matrix(np.array([x[0],x[1],x[2]]))
-    q_mat = transformations.quaternion_matrix(normalize_quaternion(np.array([0, 0, x[3], 1-x[3]*x[3]])))
-    mat = np.dot(t_mat, q_mat)
-    print np.dot(mat,v2)
-    err_mat = v1-np.dot(mat,v2)
-    # print err_mat
-    err_norm = LA.norm(err_mat[:,0])+LA.norm(err_mat[:,1])+LA.norm(err_mat[:,2])   
-    return err_norm
-
-def normalize_quaternion(rot):
-    ratio = math.sqrt(rot[0]**2 + rot[1]**2 + rot[2]**2 + rot[3]**2)
-    return (rot[0]/ratio, rot[1]/ratio, rot[2]/ratio, rot[3]/ratio)
-
-def solveForT(v1,v2):
-    # v1 = map(list, zip(*v1))
-    # v1.append([1,1,1])
-    # v2 = map(list, zip(*v2))
-    # v2.append([1,1,1])
-    v1 = [pt+[1] for pt in v1]
-    v2 = [pt+[1] for pt in v2]
-    # xo = np.array([0,0,0,0,0,0,1])
-    xyzy = np.array([0, 0, 0, 0])
-    solution = minimize(cost_funz,xyzy,method='L-BFGS-B',args=(v1,v2))
-    solution = minimize(cost_fun,[solution.x[0],solution.x[1],solution.x[2],0,0,solution.x[3],(1-solution.x[3]**2)**(1./2)],method='L-BFGS-B',args=(v1,v2))
-    tran_mat = transformations.translation_matrix(np.array([solution.x[0],solution.x[1],solution.x[2]])) #tf.transformations.
-    quat = np.array([solution.x[3],solution.x[4],solution.x[5],solution.x[6]])
-    quat = transformations.normalize_quaternion(quat) #Vital for Correct Solution
-    quat_mat = transformations.quaternion_matrix(np.array(quat))
-    T12 = transformations.concatenate_matrices(tran_mat,quat_mat)
-
-    # print v1
-    # print v2
-    # print T12
-
-    return T12
-
-################################# End ################################
-
 ######################### Horns method ########################
 def horns_method(v1,v2):
     # Define pt arrays [[x],[y],...,[z]]
@@ -216,11 +154,8 @@ def testHorn():
 
         v2[i-1][:] = v2_p
 
-    print v1, "\n"
-    print v2
 
-
-    
+    # run horns methods    
     horns_method(v1,v2)
 
 
