@@ -83,13 +83,12 @@ def horns_method(v1,v2):
     # Solve for translation based on difference of transformed centroids
     c1 = np.append(c1,np.zeros((1,np.size(c1,1))),axis=0)
     c2 = np.append(c2,np.zeros((1,np.size(c2,1))),axis=0)
-    print "\n", c1
-    print quat_mat
     trans = c2-s*np.dot(quat_mat,c1)
-    trans_mat = tf.transformations.translation_matrix(trans)
+    tras_t = [trans[0], trans[1],trans[2] ] - # add a vector
+    trans_mat = transformations.translation_matrix(tras_t)
 
     # Full solution from rotation and translation matrix
-    solution = numpy.dot(trans_mat,quat_matrix)
+    solution = np.dot(trans_mat,quat_mat)
 
     # Solve for residuals and error
     v1 = np.append(v1,np.zeros((1,np.size(v1,1))), axis=0)
@@ -155,6 +154,10 @@ def testHorn():
         v2[i-1][:] = v2_p
 
 
+    v1 = v1[:,:-1]
+    v2 = v2[:,:-1]
+    print v1
+    print v2
     # run horns methods    
     horns_method(v1,v2)
 
