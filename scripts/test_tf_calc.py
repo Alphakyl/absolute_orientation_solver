@@ -146,6 +146,7 @@ def horns_method(v1,v2):
     c1 = np.append(c1,np.zeros((1,np.size(c1,1))),axis=0)
     c2 = np.append(c2,np.zeros((1,np.size(c2,1))),axis=0)
     print "\n", c1
+    print quat_mat
     trans = c2-s*np.dot(quat_mat,c1)
     trans_mat = tf.transformations.translation_matrix(trans)
 
