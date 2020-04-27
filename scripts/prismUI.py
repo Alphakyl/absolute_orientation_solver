@@ -74,9 +74,9 @@ kyle_2d = True
 # Vrq3 = [-0.2, -0.25, -0.25]
 
 # UAVs on launch pad corrected
-Vrq1 = [-0.1, .25, -.205]
-Vrq2 = [0.1,-0.25, -.205]
-Vrq3 = [-0.1,-.25, -.205]
+#Vrq1 = [-0.1, .25, -.205]
+#Vrq2 = [0.1,-0.25, -.205]
+#Vrq3 = [-0.1,-.25, -.205]
 
 # Vgp = [Vgp1,Vgp2,Vgp3]
 # Vrq = [Vrq1,Vrq2,Vrq3]
