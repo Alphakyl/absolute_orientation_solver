@@ -17,7 +17,7 @@ def horns_method(v1,v2):
     # Calculate centroids
     c1 = np.sum(v1,1)/np.size(v1,1)
     c1 = c1[:,np.newaxis]
-    c2 = np.sum(v2,1)/np.size(v2,2)
+    c2 = np.sum(v2,1)/np.size(v2,1)
     c2 = c2[:,np.newaxis]
 
     # Update coordinates by removing their centroids
@@ -51,16 +51,18 @@ def horns_method(v1,v2):
     eig_val,eig_vec = np.linalg.eig(N)
     # rot = [w, x, y, z]
     rot = eig_vec[:,np.argmax(eig_val)]
-    quat_mat = tf.transformations.quaternion_matrix(rot[1], rot[2], rot[3], rot[0])
+    quat_mat = tf.transformations.quaternion_matrix([rot[1], rot[2], rot[3], rot[0]])
     
     # Solve for translation based on difference of transformed centroids
     c1 = np.append(c1,np.zeros((1,np.size(c1,1))),axis=0)
     c2 = np.append(c2,np.zeros((1,np.size(c2,1))),axis=0)
     trans = c2-s*np.dot(quat_mat,c1)
+    trans = trans.T
+    trans = trans_vector[0,0:3]
     trans_mat = tf.transformations.translation_matrix(trans)
 
     # Full solution from rotation and translation matrix
-    solution = numpy.dot(trans_mat,quat_matrix)
+    solution = numpy.dot(trans_mat,quat_mat)
 
     # Solve for residuals and error
     v1 = np.append(v1,np.zeros((1,np.size(v1,1))), axis=0)
