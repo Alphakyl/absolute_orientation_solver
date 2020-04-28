@@ -12,8 +12,7 @@ import leica_service as LS
 #import tf
 #import numpy as np 
 #import tf2_ros
-#from numpy import l
-inalg as LA
+#from numpy import linalg as LA
 #from numpy.linalg import inv
 #from scipy.optimize import minimize
 #from scipy.spatial.transform import Rotation
@@ -46,6 +45,7 @@ base_name = "UGV"
 gate_name = "Alpha"
 kyle_2d = True
 
+# Dictionaries the hold informations on various prisms and bases
 AVAILABLE_PRISMS = {
     "big_360": {
         "num"      : 3,
@@ -105,6 +105,7 @@ AVAILABLE_GATES = {
 }
 
 
+# Empty global variables for storing prism points (Given values and calculated from the Leica)
 V_gate_prism = [[None]*3 for i in range(3)]
 V_robot_prism = [[None]*3 for i in range(3)]
 V_leica_prism_gate = [[None]*3 for i in range(3)]
@@ -112,7 +113,9 @@ V_leica_prism_robot = [[None]*3 for i in range(3)]
 
 
 class PrismMonitorWidget(QMainWindow):
+##############################################################################
 # UI Stuff Here
+###############################################################################
     def __init__(self,parent = None):
         # not sure what super does
         super(PrismMonitorWidget,self).__init__()
@@ -137,29 +140,41 @@ class PrismMonitorWidget(QMainWindow):
         self._createRobotTarget()
         # Create an exit button for convenience
         self._createExit()
+
+        # Wire up buttons to do various functions
         self._connectSignals()
+
         # launch publisher thread
         self.pub_thread = threading.Thread(target=self._calcTF, args=())
         self.pub_thread.start()
 
     def _createButtonAndPrismComboBox(self, group_label, box_label):
+        # Generic button and combo box layout for prism selection
+
+        # Creates a horizontal layout
         boxLayout = QHBoxLayout()
         groupBox = QGroupBox(box_label)
 
+        # Creates a button and adds it to a dictionary of dictionaries for later use
         self.buttons[group_label][box_label] = QPushButton('Calculate')
         boxLayout.addWidget(self.buttons[group_label][box_label])
 
+        # Creates a combo box and adds it to a dictionary of dictionaries for later use
         self.prismOptions[group_label][box_label] = QComboBox()
         l = []
         for key in AVAILABLE_PRISMS:
             l.append(key)
         self.prismOptions[group_label][box_label].addItems(l)
+
+        # Adds layout to our widget
         boxLayout.addWidget(self.prismOptions[group_label][box_label])
         groupBox.setLayout(boxLayout)
+        
+        # Returns the layout for use outside this function
         return groupBox
     
     def _createGateCalculate(self):
-        # gate group
+        # Creating the gate functions in the GUI
         prismGroupLayout = QVBoxLayout()
         # Label overall box as Gate
         prismGroup = QGroupBox('Gate')
@@ -174,13 +189,14 @@ class PrismMonitorWidget(QMainWindow):
 
         # Add buttons and dropdowns for each prism
         group_label = 'Gate'
+        # Creates the outer key value as an empty dictionary
         self.buttons[group_label] = {}
         self.prismOptions[group_label] = {}
         prismGroupLayout.addWidget(self._createButtonAndPrismComboBox(group_label,'Left'))
         prismGroupLayout.addWidget(self._createButtonAndPrismComboBox(group_label,'Top'))
         prismGroupLayout.addWidget(self._createButtonAndPrismComboBox(group_label,'Right'))
 
-        # solve gate
+        # Create a button to call Horn's Method
         self.btnSolveGate = QPushButton('Calculate G->L TF')
         # self.btnSolveGate.clicked.connect(self.btnSolveGate_onclick)
         prismGroupLayout.addWidget(self.btnSolveGate)
@@ -190,12 +206,12 @@ class PrismMonitorWidget(QMainWindow):
         # self.btnResetGate.clicked.connect(self.btnResetGate_onclick)
         prismGroupLayout.addWidget(self.btnResetGate)
 
-        # gate group
+        # Layout the gate group in the GUI
         prismGroup.setLayout(prismGroupLayout)
         self.layout.addWidget(prismGroup)
 
     def _createRobotCalculate(self):
-        # robot group
+        # Creating the robot fucntions in the GUI
         prismGroupLayout = QVBoxLayout()
         prismGroup = QGroupBox('Robot')
 
@@ -207,14 +223,16 @@ class PrismMonitorWidget(QMainWindow):
         self.baseOption.addItems(l)    
         prismGroupLayout.addWidget(self.baseOption)
 
+        # Add buttons and dropdowns for each prism
         group_label = 'Robot'
+        # Creates outer key value as an empty dictionary
         self.buttons[group_label]={}
         self.prismOptions[group_label]={}
         prismGroupLayout.addWidget(self._createButtonAndPrismComboBox(group_label, 'Left'))
         prismGroupLayout.addWidget(self._createButtonAndPrismComboBox(group_label, 'Top'))
         prismGroupLayout.addWidget(self._createButtonAndPrismComboBox(group_label, 'Right'))
 
-        # solve robot
+        # Create a button to call Horn's Method
         self.btnSolveRobot = QPushButton('Calculate R->L TF')
         # self.btnSolveRobot.clicked.connect(self.btnSolveRobot_onclick)
         prismGroupLayout.addWidget(self.btnSolveRobot)
@@ -224,25 +242,36 @@ class PrismMonitorWidget(QMainWindow):
         # self.btnResetRobot.clicked.connect(self.btnResetRobot_onclick)
         prismGroupLayout.addWidget(self.btnResetRobot)
 
-        # robot group
+        # Layout the robot grou in the GUI
         prismGroup.setLayout(prismGroupLayout)
         self.layout.addWidget(prismGroup)
     
     def _createRobotTarget(self):
+        # Creating the target robot functions in the GUI for passing TFs
         robotGroupLayout = QHBoxLayout()
         robotGroup = QGroupBox('Target Robot')
+
+        # Creating a button for calculating full transform
         self.button = QPushButton('Calculate')
         robotGroupLayout.addWidget(self.button)
+
+        # Creating a combo box with a list of potential robots
         self.robotOption = QComboBox()
         self.robotOption.addItems(AVAILABLE_ROBOTS)
         robotGroupLayout.addWidget(self.robotOption)
+
+        # Creating a sendTF button
         self.sendtfbtn = QPushButton('Send TF')
         self.sendtfbtn.clicked.connect(self._sendTF) 
         robotGroupLayout.addWidget(self.sendtfbtn)
+
+        # Adding layout to GUI
         robotGroup.setLayout(robotGroupLayout)
         self.layout.addWidget(robotGroup)
 
-# Functions here
+#################################################################
+# Button connections and general functions here
+#################################################################
     def _sendTF(self):
         l = 1
     def _calcTF(self):
@@ -325,8 +354,9 @@ class PrismMonitorWidget(QMainWindow):
                     prism_btn.setEnabled(True)
             LS.LeicaStopTracking()
         return pos
-
-        
+################################################################################
+# End of PrismMonitorWidget Class
+################################################################################
 
 def main():
 #    rospy.init_node('prism_monitor_node')

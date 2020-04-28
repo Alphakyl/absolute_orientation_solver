@@ -7,7 +7,7 @@ from geometry_msgs.msg import *
 
 from leica_ros.srv import *
 from marble_origin_detection_msgs.srv import *
-from marble_origin_detection_msgs.srv import SetTF, SetTFRequest, SetTFResponse
+# from marble_origin_detection_msgs.srv import SetTF, SetTFRequest, SetTFResponse
 
 def LeicaSetPrismType(self,prism_name):
     set_prism_type_svc = rospy.ServiceProxy('leica_node/set_prism_type', SetPrismType)
