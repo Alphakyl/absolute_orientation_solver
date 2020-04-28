@@ -1,20 +1,22 @@
 #!/usr/bin/python2
 import sys
-#import rospy 
+import rospy 
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
+from functools import partial
+import tf_calc
 # 
-import math
-import tf
-import numpy as np 
+#import math
+#import tf
+#import numpy as np 
 #import tf2_ros
-from numpy import linalg as LA
-from numpy.linalg import inv
-from scipy.optimize import minimize
-from scipy.spatial.transform import Rotation
-import itertools as it
-import time
+#from numpy import linalg as LA
+#from numpy.linalg import inv
+#from scipy.optimize import minimize
+#from scipy.spatial.transform import Rotation
+#import itertools as it
+#import time
 # from QLabeledValue import *
 #from leica_ros.msg import *
 #from std_msgs.msg import *
@@ -97,6 +99,13 @@ AVAILABLE_GATES = {
     }
 }
 
+
+V_gate_prism = [[None]*3 for i in range(3)]
+V_robot_prism = [[None]*3 for i in range(3)]
+V_leica_prism_gate = [[None]*3 for i in range(3)]
+V_leica_prism_robot = [[None]*3 for i in range(3)]
+
+
 class PrismMonitorWidget(QMainWindow):
     def __init__(self,parent = None):
         # not sure what super does
@@ -122,6 +131,7 @@ class PrismMonitorWidget(QMainWindow):
         self._createRobotTarget()
         # Create an exit button for convenience
         self._createExit()
+        self._connectSignals()
         # launch publisher thread
         self.pub_thread = threading.Thread(target=self._calcTF, args=())
         self.pub_thread.start()
@@ -240,6 +250,54 @@ class PrismMonitorWidget(QMainWindow):
     def btnQuit_onclick(self):
         self.pub_thread.join()
         self.parent().close()
+
+    def _connectSignals(self):
+        for group_label in self.buttons:
+            for prism_label, button in self.buttons[group_label].items():
+                button.clicked.connect(partial(self.find_location,group_label,prism_label))
+    
+    def find_location(self,group_label,prism_label):
+        global Vlq, Vrq
+        rospy.loginfo("testing log")
+        rospy.loginfo("Calculating %s %s location", group_label, prism_label)
+        print group_label, prism_label
+        # global Vlq, Vrq
+        # rospy.loginfo("Calculating Robot Position 3")
+        # pos = self.getTFOnClick(self.prismR3,self.prismR3name)
+        # if not all([i==0 for i in pos]):
+        #     Vlq[2] = pos
+
+        # delta_z = AVAILABLE_PRISMS[next(i for i in range(len(AVAILABLE_PRISMS)) if AVAILABLE_PRISMS[i]["name"]==self.prismR3name)]["z"]
+        # if isinstance(delta_z,list):
+        #     rospy.logerror("Multiple available prisms of same name.")
+        #     return pos
+        # Vrq[2][2] += delta_z
+
+    def getTFOnClick(self,prism_btn,prism_name):
+        pos = [0,0,0]
+           
+        prism_btn.setEnabled(False)
+        # set prism type in Leica to that which is currently displayed in the GUI
+        self.LeicaSetPrismType(prism_name)
+
+        got_pos = False
+        no_fails = 0
+        max_no_fails = 5
+        while not got_pos:
+            self.LeicaStartTracking()
+            pos = self.LeicaGetPos()
+            got_pos = not all([i==0 for i in pos])
+            if not got_pos:
+                no_fails += 1
+                if no_fails<max_no_fails:
+                    rospy.logwarn("Cannot get pos from Leica. Trying again (%d/%d attempts left).",max_no_fails-no_fails,max_no_fails)
+                    rospy.logwarn("Possible causes: \n- target prism appears too close to another prism")
+                else:
+                    rospy.logwarn("Cannot get pos from Leica. Aborting.")
+                    got_pos = True
+                    prism_btn.setEnabled(True)
+            self.LeicaStopTracking()
+        return pos
 
         
 
