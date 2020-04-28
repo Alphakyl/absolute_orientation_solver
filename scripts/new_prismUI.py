@@ -6,12 +6,14 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from functools import partial
 import tf_calc
+import leica_service as LS
 # 
 #import math
 #import tf
 #import numpy as np 
 #import tf2_ros
-#from numpy import linalg as LA
+#from numpy import l
+inalg as LA
 #from numpy.linalg import inv
 #from scipy.optimize import minimize
 #from scipy.spatial.transform import Rotation
@@ -303,14 +305,14 @@ class PrismMonitorWidget(QMainWindow):
            
         prism_btn.setEnabled(False)
         # set prism type in Leica to that which is currently displayed in the GUI
-        self.LeicaSetPrismType(prism_name)
+        LS.LeicaSetPrismType(prism_name)
 
         got_pos = False
         no_fails = 0
         max_no_fails = 5
         while not got_pos:
-            self.LeicaStartTracking()
-            pos = self.LeicaGetPos()
+            LS.LeicaStartTracking()
+            pos = LS.LeicaGetPos()
             got_pos = not all([i==0 for i in pos])
             if not got_pos:
                 no_fails += 1
@@ -321,57 +323,9 @@ class PrismMonitorWidget(QMainWindow):
                     rospy.logwarn("Cannot get pos from Leica. Aborting.")
                     got_pos = True
                     prism_btn.setEnabled(True)
-            self.LeicaStopTracking()
+            LS.LeicaStopTracking()
         return pos
 
-    def LeicaSetPrismType(self,prism_name):
-        set_prism_type_svc = rospy.ServiceProxy('leica_node/set_prism_type', SetPrismType)
-        try:
-            rospy.loginfo("Setting to prism: %s",prism_name)
-            set_prism_type_req = SetPrismTypeRequest()
-            if prism_name=="micro_360":
-                set_prism_type_req.name = "mini_360"
-            else:
-                set_prism_type_req.name = prism_name
-            set_prism_type_resp = set_prism_type_svc(set_prism_type_req)
-        except rospy.ServiceException as e:
-            rospy.logwarn("Service call failed: %s",e)
-            return 
-        rospy.loginfo("Prism set to %s",prism_name)
-        return set_prism_type_resp
-
-    def LeicaStartTracking(self):
-        start_tracking_svc = rospy.ServiceProxy('leica_node/start_tracking', StartTracking)
-        try:
-            rospy.loginfo("Starting tracking")
-            start_tracking_resp = start_tracking_svc()
-        except rospy.ServiceException as e:
-            rospy.logwarn("Service call failed: %s",e)
-            return
-        rospy.loginfo("Tracking started")
-        return start_tracking_resp
-
-    def LeicaStopTracking(self):
-        stop_tracking_svc = rospy.ServiceProxy('leica_node/stop_tracking', SetBool)
-        try:
-            rospy.loginfo("Stopping tracking")
-            stop_tracking_req = SetBoolRequest()
-            stop_tracking_req.data = False
-            stop_tracking_resp = stop_tracking_svc(stop_tracking_req)
-        except rospy.ServiceException as e:
-            rospy.logwarn("Service call failed: %s",e)
-            return 
-        rospy.loginfo("Tracking stopped")
-        return stop_tracking_resp
-
-    def LeicaGetPos(self): 
-        pos = [0, 0, 0]
-        try:
-            msg = rospy.wait_for_message("leica_node/position", PointStamped, 5.0)
-            pos = [msg.point.x, msg.point.y, msg.point.z]
-        except rospy.exceptions.ROSException as e:
-            rospy.logwarn("Service call failed: %s",e)
-        return pos
         
 
 def main():
