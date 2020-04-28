@@ -257,21 +257,41 @@ class PrismMonitorWidget(QMainWindow):
                 button.clicked.connect(partial(self.find_location,group_label,prism_label))
     
     def find_location(self,group_label,prism_label):
-        global Vlq, Vrq
-        rospy.loginfo("testing log")
+        global V_gate_prism, V_leica_prism_gate, V_leica_prism_robot, V_robot_prism
         rospy.loginfo("Calculating %s %s location", group_label, prism_label)
         print group_label, prism_label
-        # global Vlq, Vrq
-        # rospy.loginfo("Calculating Robot Position 3")
-        # pos = self.getTFOnClick(self.prismR3,self.prismR3name)
-        # if not all([i==0 for i in pos]):
-        #     Vlq[2] = pos
+        pos = self.getTFOnClick(self.buttons[group_label][prism_label],self.prismOptions[group_label][prism_label].currentText())
+        if group_label == 'Gate':
+            if not all([i==0] for i in pos):
+                V_leica_prism_gate[self.point_from_label(prism_label)] = pos
+        
+            delta_z = AVAILABLE_PRISMS[prism_label]["z"]
+            if isinstance(delta_z, list):
+                ropsy.logerror("Multiple available prisms of same name.")
+                return pos
+            V_gate_prism[self.point_from_label(prism_label)][2] += delta_z
 
-        # delta_z = AVAILABLE_PRISMS[next(i for i in range(len(AVAILABLE_PRISMS)) if AVAILABLE_PRISMS[i]["name"]==self.prismR3name)]["z"]
-        # if isinstance(delta_z,list):
-        #     rospy.logerror("Multiple available prisms of same name.")
-        #     return pos
-        # Vrq[2][2] += delta_z
+        else if group_label == 'Robot':
+            if not all([i==0] for i in pos):
+                V_leica_prism_robot[self.point_from_label(prism_label)] = pos
+        
+            delta_z = AVAILABLE_PRISMS[prism_label]["z"]
+            if isinstance(delta_z, list):
+                ropsy.logerror("Multiple available prisms of same name.")
+                return pos
+            V_robot_prism[self.point_from_label(prism_label)][2] += delta_z
+        
+        else:
+            rospy.logerror("Invalid Group Label")
+            return pos
+
+    def point_from_label(self,label):
+        point = {
+            'Left':1,
+            'Top':2,
+            'Right':3
+            }
+        return point.get(label)
 
     def getTFOnClick(self,prism_btn,prism_name):
         pos = [0,0,0]
