@@ -35,8 +35,8 @@ import threading
 robot_ns = "A99"
 child_frame_id = "gate_leica"
 parent_frame_id = "body_aligned_imu_link"
-base_name = "ugv"
-gate_name = "alpha"
+base_name = "UGV"
+gate_name = "Alpha"
 kyle_2d = True
 
 AVAILABLE_PRISMS = {
@@ -66,12 +66,12 @@ AVAILABLE_ROBOTS = ["H01","H02","H03","T01","T02","T03","L01","A01","A02","A03",
 
 # List of base dictionaries added by Kyle
 AVAILABLE_BASE = {
-    "ugv": {
+    "UGV": {
         "Vrq1"      : [-0.045, 0.100025, -0.0045],
         "Vrq2"      : [0.045, -0.100025, -0.0045],
         "Vrq3"      : [-0.045, -0.100025, -0.0045],
     },
-    "uav": {
+    "UAV": {
         "Vrq1"      : [-0.25, -.1, -.205],
         "Vrq2"      : [0.25,0.1, -.205],
         "Vrq3"      : [0.25,-.1, -.205],
@@ -80,17 +80,17 @@ AVAILABLE_BASE = {
 
 # List of gate dictionaries added by Kyle
 AVAILABLE_GATES = {
-    "alpha": {
+    "Alpha": {
         "Vgp1"      : [0.4425,1.3275 , 0.844],
         "Vgp2"      : [0.4535, -0.001, 2.741],
         "Vgp3"      : [0.462, -1.3115, 0.846],
     },
-    "beta": {
+    "Beta": {
         "Vgp1"      : [0.4545, 1.324, 0.8445],
         "Vgp2"      : [0.4265, 0.002, 2.688],
         "Vgp3"      : [0.441, -1.3405, 0.8425],
     },
-    "small": {
+    "Small": {
         "Vgp1"      : [-0.045, 0.100025, 0], # left
         "Vgp2"      : [0.045, -0.100025, 0], # top
         "Vgp3"      : [-0.045, -0.100025, 0], # right
@@ -99,43 +99,70 @@ AVAILABLE_GATES = {
 
 class PrismMonitorWidget(QMainWindow):
     def __init__(self,parent = None):
+        # not sure what super does
         super(PrismMonitorWidget,self).__init__()
+        # Create a vertical layout (separate stuff vertically)
         self.layout = QVBoxLayout()
+        # Create the central widget
         self._centralWidget=QWidget(self)
+        # Set the central widget to be the main widget
         self.setCentralWidget(self._centralWidget)
+        # Define the layout of the central widget (vertical layou from above)
         self._centralWidget.setLayout(self.layout)
+
+        # Create a holder dictionary for buttons and combo boxes
+        self.buttons = {}
+        self.prismOptions = {}
+
+        # Define the Gate layout (First part of central widget)
         self._createGateCalculate()
+        # Define the robot layout (Second part of the central widget)
         self._createRobotCalculate()
+        # Define the target layout (Third part of central widget)
         self._createRobotTarget()
+        # Create an exit button for convenience
         self._createExit()
         # launch publisher thread
         self.pub_thread = threading.Thread(target=self._calcTF, args=())
         self.pub_thread.start()
 
-    def _createButtonAndPrismComboBox(self,box_label):
+    def _createButtonAndPrismComboBox(self, group_label, box_label):
         boxLayout = QHBoxLayout()
         groupBox = QGroupBox(box_label)
 
-        self.button = QPushButton('Calculate')
-        boxLayout.addWidget(self.button)
+        self.buttons[group_label][box_label] = QPushButton('Calculate')
+        boxLayout.addWidget(self.buttons[group_label][box_label])
 
-        self.prismOption = QComboBox()
+        self.prismOptions[group_label][box_label] = QComboBox()
         l = []
-        for i in range(len(AVAILABLE_PRISMS)):
-            l.append(AVAILABLE_PRISMS[i]["name"])
-        self.prismOption.addItems(l)
-        boxLayout.addWidget(self.prismOption)
+        for key in AVAILABLE_PRISMS:
+            l.append(key)
+        self.prismOptions[group_label][box_label].addItems(l)
+        boxLayout.addWidget(self.prismOptions[group_label][box_label])
         groupBox.setLayout(boxLayout)
         return groupBox
     
     def _createGateCalculate(self):
         # gate group
         prismGroupLayout = QVBoxLayout()
-        prismGroup = QGroupBox('Gate') 
-        
-        prismGroupLayout.addWidget(self._createButtonAndPrismComboBox('Left'))
-        prismGroupLayout.addWidget(self._createButtonAndPrismComboBox('Top'))
-        prismGroupLayout.addWidget(self._createButtonAndPrismComboBox('Right'))
+        # Label overall box as Gate
+        prismGroup = QGroupBox('Gate')
+
+        # Add dropdown for Gate
+        self.gateOption = QComboBox()
+        l = []
+        for key in AVAILABLE_GATES:
+            l.append(key)
+        self.gateOption.addItems(l)    
+        prismGroupLayout.addWidget(self.gateOption)
+
+        # Add buttons and dropdowns for each prism
+        group_label = 'Gate'
+        self.buttons[group_label] = {}
+        self.prismOptions[group_label] = {}
+        prismGroupLayout.addWidget(self._createButtonAndPrismComboBox(group_label,'Left'))
+        prismGroupLayout.addWidget(self._createButtonAndPrismComboBox(group_label,'Top'))
+        prismGroupLayout.addWidget(self._createButtonAndPrismComboBox(group_label,'Right'))
 
         # solve gate
         self.btnSolveGate = QPushButton('Calculate G->L TF')
@@ -155,9 +182,21 @@ class PrismMonitorWidget(QMainWindow):
         # robot group
         prismGroupLayout = QVBoxLayout()
         prismGroup = QGroupBox('Robot')
-        prismGroupLayout.addWidget(self._createButtonAndPrismComboBox('Left'))
-        prismGroupLayout.addWidget(self._createButtonAndPrismComboBox('Top'))
-        prismGroupLayout.addWidget(self._createButtonAndPrismComboBox('Right'))
+
+        # Add dropdown for Robot_Base type
+        self.baseOption = QComboBox()
+        l = []
+        for key in AVAILABLE_BASE:
+            l.append(key)
+        self.baseOption.addItems(l)    
+        prismGroupLayout.addWidget(self.baseOption)
+
+        group_label = 'Robot'
+        self.buttons[group_label]={}
+        self.prismOptions[group_label]={}
+        prismGroupLayout.addWidget(self._createButtonAndPrismComboBox(group_label, 'Left'))
+        prismGroupLayout.addWidget(self._createButtonAndPrismComboBox(group_label, 'Top'))
+        prismGroupLayout.addWidget(self._createButtonAndPrismComboBox(group_label, 'Right'))
 
         # solve robot
         self.btnSolveRobot = QPushButton('Calculate R->L TF')
