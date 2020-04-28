@@ -271,7 +271,7 @@ class PrismMonitorWidget(QMainWindow):
                 return pos
             V_gate_prism[self.point_from_label(prism_label)][2] += delta_z
 
-        else if group_label == 'Robot':
+        elif group_label == 'Robot':
             if not all([i==0] for i in pos):
                 V_leica_prism_robot[self.point_from_label(prism_label)] = pos
         
