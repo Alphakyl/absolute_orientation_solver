@@ -113,9 +113,9 @@ V_leica_prism_robot = [[None]*3 for i in range(3)]
 
 
 class PrismMonitorWidget(QMainWindow):
-##############################################################################
-# UI Stuff Here
-###############################################################################
+    ##############################################################################
+    # UI Stuff Here
+    ###############################################################################
     def __init__(self,parent = None):
         # not sure what super does
         super(PrismMonitorWidget,self).__init__()
@@ -269,9 +269,9 @@ class PrismMonitorWidget(QMainWindow):
         robotGroup.setLayout(robotGroupLayout)
         self.layout.addWidget(robotGroup)
 
-#################################################################
-# Button connections and general functions here
-#################################################################
+    #################################################################
+    # Button connections and general functions here
+    #################################################################
     def _sendTF(self):
         l = 1
     def _calcTF(self):
@@ -354,12 +354,12 @@ class PrismMonitorWidget(QMainWindow):
                     prism_btn.setEnabled(True)
             LS.LeicaStopTracking()
         return pos
-################################################################################
-# End of PrismMonitorWidget Class
-################################################################################
+    ################################################################################
+    # End of PrismMonitorWidget Class
+    ################################################################################
 
 def main():
-#    rospy.init_node('prism_monitor_node')
+    rospy.init_node('prism_monitor_node')
     app = QApplication(sys.argv)
     mainWidget = PrismMonitorWidget(app)
     mainWindow = QMainWindow()
@@ -371,8 +371,8 @@ def main():
     
 
 if __name__ == '__main__':
-    main()
-#    try:
-#	main()
-#    except rospy.ROSInterruptException:
-#	pass
+#    main()
+    try:
+    	main()
+    except rospy.ROSInterruptException:
+	pass
