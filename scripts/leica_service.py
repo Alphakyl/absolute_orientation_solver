@@ -9,7 +9,7 @@ from leica_ros.srv import *
 from marble_origin_detection_msgs.srv import *
 # from marble_origin_detection_msgs.srv import SetTF, SetTFRequest, SetTFResponse
 
-def LeicaSetPrismType(self,prism_name):
+def LeicaSetPrismType(prism_name):
     set_prism_type_svc = rospy.ServiceProxy('leica_node/set_prism_type', SetPrismType)
     try:
         rospy.loginfo("Setting to prism: %s",prism_name)
@@ -25,7 +25,7 @@ def LeicaSetPrismType(self,prism_name):
     rospy.loginfo("Prism set to %s",prism_name)
     return set_prism_type_resp
 
-def LeicaGetPrismType(self):
+def LeicaGetPrismType():
     get_prism_type_svc = rospy.ServiceProxy('leica_node/get_prism_type', GetPrismType)
     try:
         rospy.loginfo("Getting current prism name")
@@ -37,7 +37,7 @@ def LeicaGetPrismType(self):
     rospy.loginfo("Current prism: %s",current_prism_name)
     return current_prism_name
 
-def LeicaStartTracking(self):
+def LeicaStartTracking():
     start_tracking_svc = rospy.ServiceProxy('leica_node/start_tracking', StartTracking)
     try:
         rospy.loginfo("Starting tracking")
@@ -48,7 +48,7 @@ def LeicaStartTracking(self):
     rospy.loginfo("Tracking started")
     return start_tracking_resp
 
-def LeicaStopTracking(self):
+def LeicaStopTracking():
     stop_tracking_svc = rospy.ServiceProxy('leica_node/stop_tracking', SetBool)
     try:
         rospy.loginfo("Stopping tracking")
@@ -61,7 +61,7 @@ def LeicaStopTracking(self):
     rospy.loginfo("Tracking stopped")
     return stop_tracking_resp
 
-def LeicaGetPos(self): 
+def LeicaGetPos(): 
     pos = [0, 0, 0]
     try:
         msg = rospy.wait_for_message("leica_node/position", PointStamped, 5.0)
