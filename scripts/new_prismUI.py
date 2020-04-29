@@ -7,7 +7,7 @@ from PyQt5.QtGui import *
 from functools import partial
 import tf_calc
 import leica_service as LS
-# 
+ 
 #import math
 #import tf
 #import numpy as np 
@@ -33,17 +33,14 @@ import leica_service as LS
 import threading
 
 # TODO: Wire Calculate Buttons
-# TODO: Wire non-prism Type Toggles
-# TODO: Wire Reset Buttons
 # TODO: Wire SEND TF BLOCK
 
 # GLOBAL VARIABLES
-robot_ns = "A99"
+robot_ns = "H01"
 child_frame_id = "gate_leica"
 parent_frame_id = "body_aligned_imu_link"
-base_name = "UGV"
-gate_name = "Alpha"
-kyle_2d = True
+current_gate = "Small"
+current_base = "UGV"
 
 # Dictionaries the hold informations on various prisms and bases
 AVAILABLE_PRISMS = {
@@ -106,8 +103,8 @@ AVAILABLE_GATES = {
 
 
 # Empty global variables for storing prism points (Given values and calculated from the Leica)
-V_gate_prism = [[None]*3 for i in range(3)]
-V_robot_prism = [[None]*3 for i in range(3)]
+V_gate_prism = [AVAILABLE_GATES[current_gate][key] for key in AVAILABLE_GATES[current_gate]]
+V_robot_prism = [AVAILABLE_BASE[current_base][key] for key in AVAILABLE_BASE[current_base]]
 V_leica_prism_gate = [[None]*3 for i in range(3)]
 V_leica_prism_robot = [[None]*3 for i in range(3)]
 
@@ -184,8 +181,9 @@ class PrismMonitorWidget(QMainWindow):
         l = []
         for key in AVAILABLE_GATES:
             l.append(key)
-        self.gateOption.addItems(l)    
+        self.gateOption.addItems(l)
         prismGroupLayout.addWidget(self.gateOption)
+        self.gateOption.currentIndexChanged.connect(self._current_gate)    
 
         # Add buttons and dropdowns for each prism
         group_label = 'Gate'
@@ -203,7 +201,7 @@ class PrismMonitorWidget(QMainWindow):
 
         # reset gate
         self.btnResetGate = QPushButton('Reset G->L TF')
-        # self.btnResetGate.clicked.connect(self.btnResetGate_onclick)
+        self.btnResetGate.clicked.connect(partial(self.Reset_onclick, 'Gate'))
         prismGroupLayout.addWidget(self.btnResetGate)
 
         # Layout the gate group in the GUI
@@ -222,6 +220,7 @@ class PrismMonitorWidget(QMainWindow):
             l.append(key)
         self.baseOption.addItems(l)    
         prismGroupLayout.addWidget(self.baseOption)
+        self.baseOption.currentIndexChanged.connect(self._current_base)    
 
         # Add buttons and dropdowns for each prism
         group_label = 'Robot'
@@ -239,7 +238,7 @@ class PrismMonitorWidget(QMainWindow):
         
         # reset robot
         self.btnResetRobot = QPushButton('Reset R->L TF')
-        # self.btnResetRobot.clicked.connect(self.btnResetRobot_onclick)
+        self.btnResetRobot.clicked.connect(partial(self.Reset_onclick, 'Robot'))
         prismGroupLayout.addWidget(self.btnResetRobot)
 
         # Layout the robot grou in the GUI
@@ -258,6 +257,7 @@ class PrismMonitorWidget(QMainWindow):
         # Creating a combo box with a list of potential robots
         self.robotOption = QComboBox()
         self.robotOption.addItems(AVAILABLE_ROBOTS)
+        self.robotOption.currentIndexChanged.connect(self._current_robot)
         robotGroupLayout.addWidget(self.robotOption)
 
         # Creating a sendTF button
@@ -277,6 +277,29 @@ class PrismMonitorWidget(QMainWindow):
     def _calcTF(self):
         l = 1
 
+    def _current_gate(self):
+        global V_gate_prism, current_gate
+
+        # Use the current value of gate and base to chose proper value for gate prisms for comparison
+        current_gate = self.gateOption.currentText()
+        V_gate_prism = [AVAILABLE_GATES[current_gate][key] for key in AVAILABLE_GATES[current_gate]]
+        print current_gate
+        print V_gate_prism
+
+    def _current_base(self):
+        global V_robot_prism, current_base
+    
+        # Use the current value of gate and base to chose proper value for gates and base prisms for comparison
+        current_base = self.baseOption.currentText()
+        V_robot_prism = [AVAILABLE_BASE[current_base][key] for key in AVAILABLE_BASE[current_base]]
+        print current_base
+        print V_robot_prism
+
+    def _current_robot(self):
+        global robot_ns
+        robot_ns = self.robotOption.currentText()
+        print robot_ns
+
     def _createExit(self):
         #Exit Button layout
         self.btnQuit = QPushButton('Exit')
@@ -293,14 +316,20 @@ class PrismMonitorWidget(QMainWindow):
                 button.clicked.connect(partial(self.find_location,group_label,prism_label))
     
     def find_location(self,group_label,prism_label):
-        global V_gate_prism, V_leica_prism_gate, V_leica_prism_robot, V_robot_prism
+        global V_leica_prism_gate, V_leica_prism_robot
+
+        # For the correct group label and prism label find the TF
         rospy.loginfo("Calculating %s %s location", group_label, prism_label)
         print group_label, prism_label
         pos = self.getTFOnClick(self.buttons[group_label][prism_label],self.prismOptions[group_label][prism_label].currentText())
+        
+        # Apply pose to the proper group, gate or robot
         if group_label == 'Gate':
+            # Check that the returned pose isn't the default pose
             if not all([i==0] for i in pos):
                 V_leica_prism_gate[self.point_from_label(prism_label)] = pos
-        
+
+            # Apply an offset based on the height of prisms
             delta_z = AVAILABLE_PRISMS[prism_label]["z"]
             if isinstance(delta_z, list):
                 ropsy.logerror("Multiple available prisms of same name.")
@@ -308,9 +337,11 @@ class PrismMonitorWidget(QMainWindow):
             V_gate_prism[self.point_from_label(prism_label)][2] += delta_z
 
         elif group_label == 'Robot':
+            # Check that the returned pose isn't the default pose
             if not all([i==0] for i in pos):
                 V_leica_prism_robot[self.point_from_label(prism_label)] = pos
         
+            # Apply an offset based on the height of prisms
             delta_z = AVAILABLE_PRISMS[prism_label]["z"]
             if isinstance(delta_z, list):
                 ropsy.logerror("Multiple available prisms of same name.")
@@ -354,6 +385,38 @@ class PrismMonitorWidget(QMainWindow):
                     prism_btn.setEnabled(True)
             LS.LeicaStopTracking()
         return pos
+
+    def Reset_onclick(self, group_label):
+        global V_gate_prism, V_leica_prism_gate, V_leica_prism_robot, V_robot_prism
+        if group_label == 'Gate':
+            rospy.loginfo("Resetting Gate")
+            LS.LeicaStopTracking()
+
+            V_leica_prism_gate = [[None]*3 for i in range(3)]
+            self.Trg = None
+
+            self.Tgl_found = False
+            self.Trg_found = False
+
+            for prism_label, button in self.buttons[group_label].items():
+                button.setEnabled(True)
+        elif group_label == 'Robot':
+            rospy.loginfo("Resetting Robot")
+            LS.LeicaStopTracking()
+
+            V_leica_prism_robot = [[None]*3 for i in range(3)]
+            self.Trg = None
+
+            self.Tgl_found = False
+            self.Trg_found = False
+
+            for prism_label, button in self.buttons[group_label].items():
+                button.setEnabled(True)
+        else:
+            rospy.logerror("Invalid Group Label, Reset Failed")
+            return -1
+
+
     ################################################################################
     # End of PrismMonitorWidget Class
     ################################################################################
