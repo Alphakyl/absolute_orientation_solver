@@ -7,9 +7,9 @@ from PyQt5.QtGui import *
 from functools import partial
 import tf_calc
 import leica_service as LS
- 
+import tf
+
 #import math
-#import tf
 #import numpy as np 
 #import tf2_ros
 #from numpy import linalg as LA
@@ -30,9 +30,8 @@ import leica_service as LS
 #from marble_origin_detection_msgs.srv import *
 # from marble_origin_detection_msgs.srv import SetTF, SetTFRequest, SetTFResponse
 
-import threading
+#import threading
 
-# TODO: Wire Calculate Buttons
 # TODO: Wire SEND TF BLOCK
 
 # GLOBAL VARIABLES
@@ -41,6 +40,7 @@ child_frame_id = "gate_leica"
 parent_frame_id = "body_aligned_imu_link"
 current_gate = "Small"
 current_base = "UGV"
+project_transform_from_3d_to_2d = False
 
 # Dictionaries the hold informations on various prisms and bases
 AVAILABLE_PRISMS = {
@@ -142,8 +142,8 @@ class PrismMonitorWidget(QMainWindow):
         self._connectSignals()
 
         # launch publisher thread
-        self.pub_thread = threading.Thread(target=self._calcTF, args=())
-        self.pub_thread.start()
+        # self.pub_thread = threading.Thread(target=self._calcTF, args=())
+        # self.pub_thread.start()
 
     def _createButtonAndPrismComboBox(self, group_label, box_label):
         # Generic button and combo box layout for prism selection
@@ -196,7 +196,7 @@ class PrismMonitorWidget(QMainWindow):
 
         # Create a button to call Horn's Method
         self.btnSolveGate = QPushButton('Calculate G->L TF')
-        # self.btnSolveGate.clicked.connect(self.btnSolveGate_onclick)
+        self.btnSolveGate.clicked.connect(partial(self.Solve_onclick, 'Gate'))
         prismGroupLayout.addWidget(self.btnSolveGate)
 
         # reset gate
@@ -233,7 +233,7 @@ class PrismMonitorWidget(QMainWindow):
 
         # Create a button to call Horn's Method
         self.btnSolveRobot = QPushButton('Calculate R->L TF')
-        # self.btnSolveRobot.clicked.connect(self.btnSolveRobot_onclick)
+        self.btnSolveRobot.clicked.connect(partial(self.Solve_onclick, 'Robot'))
         prismGroupLayout.addWidget(self.btnSolveRobot)
         
         # reset robot
@@ -262,7 +262,7 @@ class PrismMonitorWidget(QMainWindow):
 
         # Creating a sendTF button
         self.sendtfbtn = QPushButton('Send TF')
-        self.sendtfbtn.clicked.connect(self._sendTF) 
+        self.sendtfbtn.clicked.connect(self._sendTF)    
         robotGroupLayout.addWidget(self.sendtfbtn)
 
         # Adding layout to GUI
@@ -275,7 +275,19 @@ class PrismMonitorWidget(QMainWindow):
     def _sendTF(self):
         l = 1
     def _calcTF(self):
-        l = 1
+        global project_transform_from_3d_to_2d
+        self.Transform_robot_gate = tf.transformations.concatenate_matrices(self.Transform_robot_leica,tf.transformations.inverse_matrix(self.Transform_gate_leica))
+        if not self.Trg_found:
+            rospy.loginfo("Robot->Gate:\n%s, %s",\
+                tf.transformations.translation_from_matrix(self.Transform_robot_gate).__str__(),\
+                [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(self.Transform_robot_gate, 'sxyz')].__str__())
+            if project_transform_from_3d_to_2d:
+                rospy.loginfo("Projecting 3d transfrom to x-y plane...")
+                yaw, pitch, roll = tf.transformations.euler_from_matrix(self.Transform_robot_gate[0:3,0:3], axes="szyx")
+                R = tf.transformations.euler_matrix(yaw, 0.0, 0.0, axes="szyx")
+                self.Transform_robot_gate[0:3, 0:3] = R[0:3, 0:3]
+                rospy.loginfo("New (yaw, pitch, roll) = (%0.4f, %0.4f, %0.4f)" % (yaw*180.0/np.pi, 0.0, 0.0))
+        self.Trg_found = True
 
     def _current_gate(self):
         global V_gate_prism, current_gate
@@ -307,7 +319,7 @@ class PrismMonitorWidget(QMainWindow):
         self.layout.addWidget(self.btnQuit)
 
     def btnQuit_onclick(self):
-        self.pub_thread.join()
+        # self.pub_thread.join()
         self.parent().close()
 
     def _connectSignals(self):
@@ -416,7 +428,30 @@ class PrismMonitorWidget(QMainWindow):
             rospy.logerror("Invalid Group Label, Reset Failed")
             return -1
 
-
+    def Solve_onclick(self,group_label):
+        global V_gate_prism, V_leica_prism_gate, V_leica_prism_robot, V_robot_prism
+        if group_label == 'Gate':
+            rospy.loginfo("Calculating Gate->Leica")
+            if not any(None in pt for pt in V_leica_prism_gate):
+                self.Transform_gate_leica = tf_calc.solveForT(V_gate_prism,V_leica_prism_gate)
+                rospy.loginfo("Gate->Leica:\n%s, %s",\
+                    tf.transformations.translation_from_matrix(self.Transform_gate_leica).__str__(),\
+                    [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(Tgl, 'sxyz')].__str__())
+            else:
+                rospy.logwarn("Three prisms needed")
+        elif group_label == 'Robot':
+            rospy.loginfo("Calculaing Robot->Leica")
+            if not any(None in pt for pt in V_leica_prism_robot):
+                self.Transform_robot_leica = tf_calc.solveForT(V_robot_prism,V_leica_prism_robot)
+                rospy.loginfo("Robot->Leica:\n%s, %s",\
+                    tf.transformations.translation_from_matrix(self.Transform_robot_leica).__str__(),\
+                    [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(Trl, 'sxyz')].__str__())
+            else:
+                rospy.logwarn("Three prisms needed")
+        else:
+           rospy.logerror("Invalid Group Label, Solve Failed")
+           return -1 
+    
     ################################################################################
     # End of PrismMonitorWidget Class
     ################################################################################
