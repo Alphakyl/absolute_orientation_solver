@@ -7,11 +7,21 @@ except ImportError:
     sys.path.append('../../tf/src/tf')
     import transformations
 
+
 import math 
+import random as rd
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.optimize import minimize
 
 #from tf_calc import solveForT
+
+# Todo:
+# Transform to roll, pitch, yaw, x, y, z - Done
+# Compare to original
+# % error on rotation - care more about rotation - 0.3 degress
+# % error translation -
+# 
 
 AVAILABLE_GATES = [
     {
@@ -31,6 +41,22 @@ AVAILABLE_GATES = [
         "Vgp1"      : [-0.045, 0.100025, 0], # left
         "Vgp2"      : [0.045, -0.100025, 0], # top
         "Vgp3"      : [-0.045, -0.100025, 0], # right
+    }
+]
+
+# List of base dictionaries added by Kyle
+AVAILABLE_BASE = [
+    {
+        "name"      : "ugv",
+        "Vrq1"      : [-0.045, 0.100025, -0.0045],
+        "Vrq2"      : [0.045, -0.100025, -0.0045],
+        "Vrq3"      : [-0.045, -0.100025, -0.0045],
+    },
+    {
+        "name"      : "uav",
+        "Vrq1"      : [-0.25, -.1, -.205],
+        "Vrq2"      : [0.25,0.1, -.205],
+        "Vrq3"      : [0.25,-.1, -.205],
     }
 ]
 
@@ -84,7 +110,7 @@ def horns_method(v1,v2):
     c1 = np.append(c1,np.zeros((1,np.size(c1,1))),axis=0)
     c2 = np.append(c2,np.zeros((1,np.size(c2,1))),axis=0)
     trans = c2-s*np.dot(quat_mat,c1)
-    tras_t = [trans[0], trans[1],trans[2] ] - # add a vector
+    tras_t = [trans[0], trans[1],trans[2] ] # add a vector
     trans_mat = transformations.translation_matrix(tras_t)
 
     # Full solution from rotation and translation matrix
@@ -94,7 +120,7 @@ def horns_method(v1,v2):
     v1 = np.append(v1,np.zeros((1,np.size(v1,1))), axis=0)
     v2 = np.append(v2,np.zeros((1,np.size(v2,1))), axis=0)
     residuals = v2-np.dot(solution,v1)
-    error = np.sum([np.dot(residuals[:,col],residuals[:,col]) for col in range(np.size(v1,1))])
+    error = np.sum( [ math.sqrt( np.dot(residuals[:,col] , residuals[:,col] )) for col in range(np.size(v1,1))])
     
     # Return error and solution
     return error, solution
@@ -102,6 +128,14 @@ def horns_method(v1,v2):
 
 ######################## Test Code 2 ###########################
 
+def dcm2ypr(R):
+    # Takes matrix and converted to roll pitch yaw
+
+    yaw = math.atan2(R[0][1], R[0][0])*180.0/math.pi
+    pitch = math.asin(-R[0][2])*180.0/math.pi
+    roll = math.atan2(R[1][2], R[2][2])*180.0/math.pi
+
+    return roll, pitch, yaw 
 
 def v1tov2(v1, phi, theta, psi, M_transl):
     phi = phi * math.pi/180.0 # roll
@@ -111,11 +145,11 @@ def v1tov2(v1, phi, theta, psi, M_transl):
     RT = np.identity(4)
 
     RT[0][0] = math.cos(theta)*math.cos(psi) # r11
-    RT[0][1] =  math.cos(theta)*math.sin(psi) # r12
+    RT[0][1] = math.cos(theta)*math.sin(psi) # r12
     RT[0][2] = -math.sin(theta) # r13
     RT[1][0] = math.sin(phi)*math.sin(theta)*math.cos(psi) - math.cos(phi)*math.sin(psi) # r21
     RT[1][1] = math.sin(phi)*math.sin(theta)*math.sin(psi) + math.cos(phi)*math.cos(psi) #r22
-    RT[2][1] = math.sin(phi)*math.cos(theta) # r23
+    RT[1][2] = math.sin(phi)*math.cos(theta) # r23
     RT[2][0] = math.cos(phi)*math.sin(theta)*math.cos(psi) + math.sin(phi)*math.sin(psi) # r31
     RT[2][1] = math.cos(phi)*math.sin(theta)*math.cos(psi) - math.sin(phi)*math.cos(psi) # r32
     RT[2][2] = math.cos(phi)*math.cos(theta) # r33
@@ -127,25 +161,24 @@ def v1tov2(v1, phi, theta, psi, M_transl):
 
     return v2, RT
 
-################################# End ############################
-
-def testHorn():
-    phi = 30.0  # roll
-    theta = 5.0 # pitch
-    psi = -5.0 #yaw
-    translation_vector = np.array([-5,-3,-1])
-
+def rotationMatrix(phi, theta, psi, magnitude_vector):
     v1 = np.zeros((3,4))
     v2 = np.zeros((3,4))
 
     for i in range(1,4):
         # extracting vector
         v1_temp = np.array([AVAILABLE_GATES[0]["Vgp"+str(i)]])
+        #v1_temp = np.array([AVAILABLE_BASE[0]["Vrq"+str(i)]])
         v1_p = np.append(v1_temp,1)
         v1[i-1][:] = v1_p
 
         # Calculate only one matrix
         if i == 1:
+            x = rd.random()
+            y = rd.uniform(0,0.15)
+            z = 1-x-y
+            translation_vector = magnitude_vector*np.array([x,y,z])
+
             v2_p, RT = v1tov2(v1_p, phi, theta, psi, translation_vector)
         # Since the matrix is already computed just do the dot product
         else:
@@ -156,13 +189,151 @@ def testHorn():
 
     v1 = v1[:,:-1]
     v2 = v2[:,:-1]
-    print v1
-    print v2
-    # run horns methods    
-    horns_method(v1,v2)
+
+    return v1, v2, RT
+
+        # run horns methods    
+        
+
+################################# End ############################
+
+def testHorn_Distance():
+    phi = 0.3  # roll
+    theta = 1.1 # pitch
+    psi = 4.9 #yaw
+    err = []
+
+    #mag_vector = 10
+    for mag_vector in range(5,10):
+
+        
+        
+        error, R =  horns_method(v1,v2)
+        '''
+        print("Trial", mag_vector)
+        print ("Actual: ", RT)
+        print ("Horns: ", R)
+        print("Diff: ", R-RT,"\n")
+        '''
+        print (dcm2ypr(R))
+        print (dcm2ypr(RT))
+
+        err.append(error)
+        
+
+    plt.plot(err)
+    plt.xlabel("Distance Magnitude")
+    plt.ylabel("%% Error")
+    plt.title("Roll: %i , Pitch: %i, Yaw:%i"%(phi,theta,psi))
+    plt.show()
+
+def testHorn_Yaw():
+    phi = 1  # roll
+    theta = 1 # pitch
+    mag_vector = 5 # m
+    err = []
+
+    for psi in range(0,20):
+
+        v1,v2,RT = rotationMatrix(phi, theta, psi, mag_vector)
+
+        # run horns methods    
+        error, R =  horns_method(v1,v2)
+        print (dcm2ypr(R))
+        print (dcm2ypr(RT))
+        err.append(error)
+        #print RT, "\n"
+        #print R
+
+        print ("Error", error)
+
+    plt.plot(err)
+    plt.xlabel("Yaw")
+    plt.ylabel("%% Error")
+    plt.title("Roll: %i , Pitch: %i, Magnitude: %i "%(phi,theta,mag_vector))
+    plt.show()
+
+def testHorn_all():
+    
+    itera = 10000
+    PH = np.zeros((itera))
+    TH = np.zeros((itera))
+    PS = np.zeros((itera))
+    X = np.zeros((itera))
+    Y = np.zeros((itera))
+    Z = np.zeros((itera))
+
+    for i in range(0,itera):
+        phi = rd.uniform(-0.5,0.5)
+        theta = rd.uniform(-0.5,0.5)
+        psi = rd.uniform(-45,45)# Yaw
+        mag_vector = rd.uniform(5,10)# Yaw
+
+        v1,v2, R_m = rotationMatrix(phi, theta, psi, mag_vector)
+
+        # run horns methods    
+        error, R_h =  horns_method(v1,v2)
+
+        print("iteration #: ", i)
+        #print(R_m,"\n")
+        #print(R_h)
+        temp_m = 0
+        temp_h = 0
+        for j in range(0,2):
+            temp_m += R_m[j][3]**2 
+            temp_h += R_h[j][3]**2
+
+        mag_m = math.sqrt(temp_m)
+        mag_h = math.sqrt(temp_h)
+        #print ("magnitude: ",mag_vector, mag_m, mag_h)
+
+        phi_H, theta_H, psi_H = dcm2ypr(R_h)
+
+        phi_err = (phi_H-phi)
+        theta_err = (theta_H-theta)
+        psi_err = (psi_H-psi)
+        x_err = (R_h[0][3]-R_m[0][3])
+        y_err = (R_h[1][3]-R_m[1][3])
+        z_err = (R_h[2][3]-R_m[2][3])
+
+        #print("RPY: ", phi,theta,psi)
+        #print("RPY horns:, ", phi_H, theta_H, psi_H)
+        #print(phi_err, theta_err, psi_err)
+        #print(x_err,y_err,z_err,"\n")
+
+
+
+        PH[i] = phi_err
+        TH[i] = theta_err
+        PS[i] = psi_err
+        X[i] = x_err
+        Y[i] = y_err
+        Z[i] = z_err
+
+    # Calculate the mean
+    phi_mean = math.sqrt(np.sum(np.dot(PH,PH))/itera)
+    theta_mean = math.sqrt(np.sum(np.dot(TH,TH))/itera)
+    psi_mean = math.sqrt(np.sum(np.dot(PS,PS))/itera)
+    X_mean = math.sqrt(np.sum(np.dot(X,X))/itera)
+    Y_mean = math.sqrt(np.sum(np.dot(Y,Y))/itera)
+    Z_mean = math.sqrt(np.sum(np.dot(Z,Z))/itera)
+
+    print(phi_mean, theta_mean, psi_mean, X_mean, Y_mean, Z_mean)
+
+    # calculate standard diviation
+    phi_std = math.sqrt(np.sum(np.dot((PH-phi_mean),(PH-phi_mean))/itera))
+    theta_std = math.sqrt(np.sum(np.dot((TH-theta_mean),(TH-theta_mean))/itera))
+    psi_std = math.sqrt(np.sum(np.dot((PS-psi_mean),(PS-psi_mean))/itera))
+    X_std = math.sqrt(np.sum(np.dot((X-X_mean),(X-X_mean))/itera))
+    Y_std = math.sqrt(np.sum(np.dot((Y-Y_mean),(Y-Y_mean))/itera))
+    Z_std = math.sqrt(np.sum(np.dot((Z-Z_mean),(Z-Z_mean))/itera))
+    print(phi_std,theta_std,psi_std,X_std,Y_std,Z_std)
+
 
 
 
 if __name__ == '__main__':
-    testHorn()
+    #testHorn_Distance()
+    #testHorn_Yaw()
+    testHorn_all()
 
