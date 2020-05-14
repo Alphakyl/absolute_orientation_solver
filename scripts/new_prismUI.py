@@ -22,7 +22,7 @@ import tf
 #from leica_ros.msg import *
 #from std_msgs.msg import *
 #from std_srvs.srv import *
-#from geometry_msgs.msg import *
+from geometry_msgs.msg import *
 
 #import message_filters
 
@@ -36,11 +36,13 @@ import tf
 
 # GLOBAL VARIABLES
 robot_ns = "H01"
-child_frame_id = "gate_leica"
+child_frame_id = "world"
+# child_frame_id = "gate_leica"
 parent_frame_id = "body_aligned_imu_link"
 current_gate = "Small"
 current_base = "UGV"
 project_transform_from_3d_to_2d = False
+num_publishes = 10
 
 # Dictionaries the hold informations on various prisms and bases
 AVAILABLE_PRISMS = {
@@ -124,6 +126,23 @@ class PrismMonitorWidget(QMainWindow):
         self.setCentralWidget(self._centralWidget)
         # Define the layout of the central widget (vertical layou from above)
         self._centralWidget.setLayout(self.layout)
+
+        # Transforms found set to false
+        self.Trg_found = False
+        self.Trl_found = False
+        self.Trg_found = False
+
+        # Store empty transforms
+        self.Transform_robot_gate = None
+        self.Transform_gate_leica = None
+        self.Transform_robot_leica = None
+
+
+        # Create publisher dictionary to store a publisher per robot
+        self.pub = {}
+        for robot in AVAILABLE_ROBOTS:
+            robot_topic = '/' + robot + '/set_world_tf'
+            self.pub[robot] = rospy.Publisher(robot_topic, TransformStamped, queue_size=10)
 
         # Create a holder dictionary for buttons and combo boxes
         self.buttons = {}
@@ -273,7 +292,30 @@ class PrismMonitorWidget(QMainWindow):
     # Button connections and general functions here
     #################################################################
     def _sendTF(self):
-        l = 1
+        global child_frame_id, parent_frame_id, robot_ns, num_publishes
+
+        if self.Trg_found == False:
+            rospy.logwarn("Can't send TF. Tf not found yet.")
+            return
+        if not self.Transform_robot_gate.shape==(4,4):
+            rospy.logwarn("Can't send TF. Tf is wrong size.")
+            return
+        
+        tf_msg = TransformStamped()
+        tf_msg.header.stamp = rospy.Time.now()
+        tf_msg.header.frame_id = parent_frame_id
+        tf_msg.child_frame_id = child_frame_id
+        tf_msg.transform.translation.x = tf.transformations.translation_from_matrix(self.Transform_robot_gate)[0]
+        tf_msg.transform.translation.y = tf.transformations.translation_from_matrix(self.Transform_robot_gate)[1]
+        tf_msg.transform.translation.z = tf.transformations.translation_from_matrix(self.Transform_robot_gate)[2]
+        tf_msg.transform.rotation.x = tf.transformations.quaternion_from_matrix(self.Transform_robot_gate)[0]
+        tf_msg.transform.rotation.y = tf.transformations.quaternion_from_matrix(self.Transform_robot_gate)[1]
+        tf_msg.transform.rotation.z = tf.transformations.quaternion_from_matrix(self.Transform_robot_gate)[2]
+        tf_msg.transform.rotation.w = tf.transformations.quaternion_from_matrix(self.Transform_robot_gate)[3]
+
+        for i in range(num_publishes):
+            self.pub[robot_ns].publish(tf_msg)
+        
     def _calcTF(self):
         global project_transform_from_3d_to_2d
         self.Transform_robot_gate = tf.transformations.concatenate_matrices(self.Transform_robot_leica,tf.transformations.inverse_matrix(self.Transform_gate_leica))
@@ -405,7 +447,8 @@ class PrismMonitorWidget(QMainWindow):
             LS.LeicaStopTracking()
 
             V_leica_prism_gate = [[None]*3 for i in range(3)]
-            self.Trg = None
+            self.Transform_robot_gate = None
+            self.Transform_gate_leica = None
 
             self.Tgl_found = False
             self.Trg_found = False
@@ -417,9 +460,10 @@ class PrismMonitorWidget(QMainWindow):
             LS.LeicaStopTracking()
 
             V_leica_prism_robot = [[None]*3 for i in range(3)]
-            self.Trg = None
+            self.Transform_robot_gate = None
+            self.Transform_robot_leica = None
 
-            self.Tgl_found = False
+            self.Trl_found = False
             self.Trg_found = False
 
             for prism_label, button in self.buttons[group_label].items():
@@ -437,6 +481,7 @@ class PrismMonitorWidget(QMainWindow):
                 rospy.loginfo("Gate->Leica:\n%s, %s",\
                     tf.transformations.translation_from_matrix(self.Transform_gate_leica).__str__(),\
                     [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(Tgl, 'sxyz')].__str__())
+                self.Tgl_found = True
             else:
                 rospy.logwarn("Three prisms needed")
         elif group_label == 'Robot':
@@ -446,6 +491,7 @@ class PrismMonitorWidget(QMainWindow):
                 rospy.loginfo("Robot->Leica:\n%s, %s",\
                     tf.transformations.translation_from_matrix(self.Transform_robot_leica).__str__(),\
                     [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(Trl, 'sxyz')].__str__())
+                self.Trl_found = True
             else:
                 rospy.logwarn("Three prisms needed")
         else:
