@@ -8,9 +8,11 @@ from functools import partial
 import tf_calc
 import leica_service as LS
 import tf
+import numpy as np 
+from geometry_msgs.msg import *
+
 
 #import math
-#import numpy as np 
 #import tf2_ros
 #from numpy import linalg as LA
 #from numpy.linalg import inv
@@ -22,17 +24,14 @@ import tf
 #from leica_ros.msg import *
 #from std_msgs.msg import *
 #from std_srvs.srv import *
-from geometry_msgs.msg import *
 
 #import message_filters
 
 #from leica_ros.srv import *
 #from marble_origin_detection_msgs.srv import *
-# from marble_origin_detection_msgs.srv import SetTF, SetTFRequest, SetTFResponse
+#from marble_origin_detection_msgs.srv import SetTF, SetTFRequest, SetTFResponse
 
 #import threading
-
-# TODO: Wire SEND TF BLOCK
 
 # GLOBAL VARIABLES
 robot_ns = "H01"
@@ -70,7 +69,7 @@ AVAILABLE_PRISMS = {
 
 AVAILABLE_ROBOTS = ["H01","H02","H03","T01","T02","T03","L01","A01","A02","A03","A99"]
 
-# List of base dictionaries added by Kyle
+# List of base dictionaries
 AVAILABLE_BASE = {
     "UGV": {
         "Vrq1"      : [-0.045, 0.100025, -0.0045],
@@ -84,7 +83,7 @@ AVAILABLE_BASE = {
     }
 }
 
-# List of gate dictionaries added by Kyle
+# List of gate dictionaries
 AVAILABLE_GATES = {
     "Alpha": {
         "Vgp1"      : [0.4425,1.3275 , 0.844],
@@ -136,7 +135,6 @@ class PrismMonitorWidget(QMainWindow):
         self.Transform_robot_gate = None
         self.Transform_gate_leica = None
         self.Transform_robot_leica = None
-
 
         # Create publisher dictionary to store a publisher per robot
         self.pub = {}
@@ -218,7 +216,7 @@ class PrismMonitorWidget(QMainWindow):
         self.btnSolveGate.clicked.connect(partial(self.Solve_onclick, 'Gate'))
         prismGroupLayout.addWidget(self.btnSolveGate)
 
-        # reset gate
+        # Reset Gate
         self.btnResetGate = QPushButton('Reset G->L TF')
         self.btnResetGate.clicked.connect(partial(self.Reset_onclick, 'Gate'))
         prismGroupLayout.addWidget(self.btnResetGate)
@@ -255,12 +253,12 @@ class PrismMonitorWidget(QMainWindow):
         self.btnSolveRobot.clicked.connect(partial(self.Solve_onclick, 'Robot'))
         prismGroupLayout.addWidget(self.btnSolveRobot)
         
-        # reset robot
+        # Reset Robot
         self.btnResetRobot = QPushButton('Reset R->L TF')
         self.btnResetRobot.clicked.connect(partial(self.Reset_onclick, 'Robot'))
         prismGroupLayout.addWidget(self.btnResetRobot)
 
-        # Layout the robot grou in the GUI
+        # Layout the robot group in the GUI
         prismGroup.setLayout(prismGroupLayout)
         self.layout.addWidget(prismGroup)
     
@@ -294,6 +292,7 @@ class PrismMonitorWidget(QMainWindow):
     def _sendTF(self):
         global child_frame_id, parent_frame_id, robot_ns, num_publishes
 
+        # Check if the tranform exists and is the correct size
         if self.Trg_found == False:
             rospy.logwarn("Can't send TF. Tf not found yet.")
             return
@@ -301,6 +300,7 @@ class PrismMonitorWidget(QMainWindow):
             rospy.logwarn("Can't send TF. Tf is wrong size.")
             return
         
+        # Create a transform stamped message from the calculated transform
         tf_msg = TransformStamped()
         tf_msg.header.stamp = rospy.Time.now()
         tf_msg.header.frame_id = parent_frame_id
@@ -313,22 +313,37 @@ class PrismMonitorWidget(QMainWindow):
         tf_msg.transform.rotation.z = tf.transformations.quaternion_from_matrix(self.Transform_robot_gate)[2]
         tf_msg.transform.rotation.w = tf.transformations.quaternion_from_matrix(self.Transform_robot_gate)[3]
 
+        # Publish the message num_publishes times to the robot_ns publisher
         for i in range(num_publishes):
             self.pub[robot_ns].publish(tf_msg)
         
     def _calcTF(self):
         global project_transform_from_3d_to_2d
+
+        # Check if gate and robot to leica transforms are available
+        if not self.Tgl_found:
+            rospy.logwarn("Missing Gate->Leica Transform")
+            return
+        if not self.Trl_found:
+            rospy.logwarn("Missing Robot->Leica Transform")
+            return
+
+        # Trg = Trl*(Tgl)^(-1)
         self.Transform_robot_gate = tf.transformations.concatenate_matrices(self.Transform_robot_leica,tf.transformations.inverse_matrix(self.Transform_gate_leica))
+
+        # If the transform has not been found previously set the transform
         if not self.Trg_found:
             rospy.loginfo("Robot->Gate:\n%s, %s",\
                 tf.transformations.translation_from_matrix(self.Transform_robot_gate).__str__(),\
                 [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(self.Transform_robot_gate, 'sxyz')].__str__())
+            # Legacy in case we need to project to 2d in the future
             if project_transform_from_3d_to_2d:
                 rospy.loginfo("Projecting 3d transfrom to x-y plane...")
                 yaw, pitch, roll = tf.transformations.euler_from_matrix(self.Transform_robot_gate[0:3,0:3], axes="szyx")
                 R = tf.transformations.euler_matrix(yaw, 0.0, 0.0, axes="szyx")
                 self.Transform_robot_gate[0:3, 0:3] = R[0:3, 0:3]
                 rospy.loginfo("New (yaw, pitch, roll) = (%0.4f, %0.4f, %0.4f)" % (yaw*180.0/np.pi, 0.0, 0.0))
+        # Mark TF as found
         self.Trg_found = True
 
     def _current_gate(self):
@@ -351,6 +366,7 @@ class PrismMonitorWidget(QMainWindow):
 
     def _current_robot(self):
         global robot_ns
+        # Set the current robot to the one shown in the combo box
         robot_ns = self.robotOption.currentText()
         print robot_ns
 
@@ -365,6 +381,7 @@ class PrismMonitorWidget(QMainWindow):
         self.parent().close()
 
     def _connectSignals(self):
+        # Wires buttons to connection script
         for group_label in self.buttons:
             for prism_label, button in self.buttons[group_label].items():
                 button.clicked.connect(partial(self.find_location,group_label,prism_label))
@@ -407,6 +424,7 @@ class PrismMonitorWidget(QMainWindow):
             return pos
 
     def point_from_label(self,label):
+        # Creates a simple switch statement dictionary
         point = {
             'Left':1,
             'Top':2,
@@ -415,19 +433,25 @@ class PrismMonitorWidget(QMainWindow):
         return point.get(label)
 
     def getTFOnClick(self,prism_btn,prism_name):
+        # Create a dummy point
         pos = [0,0,0]
-           
+
+        # Disable prism button   
         prism_btn.setEnabled(False)
+
         # set prism type in Leica to that which is currently displayed in the GUI
         LS.LeicaSetPrismType(prism_name)
 
+        # Check if we have the position
         got_pos = False
         no_fails = 0
         max_no_fails = 5
         while not got_pos:
+            # Run tracking
             LS.LeicaStartTracking()
             pos = LS.LeicaGetPos()
             got_pos = not all([i==0 for i in pos])
+            # If failure
             if not got_pos:
                 no_fails += 1
                 if no_fails<max_no_fails:
@@ -436,64 +460,89 @@ class PrismMonitorWidget(QMainWindow):
                 else:
                     rospy.logwarn("Cannot get pos from Leica. Aborting.")
                     got_pos = True
+                    # Re-enable button on total failure
                     prism_btn.setEnabled(True)
+            # End tracking
             LS.LeicaStopTracking()
         return pos
 
     def Reset_onclick(self, group_label):
         global V_gate_prism, V_leica_prism_gate, V_leica_prism_robot, V_robot_prism
+        
         if group_label == 'Gate':
             rospy.loginfo("Resetting Gate")
+            # Cancel in process tracking
             LS.LeicaStopTracking()
 
+            # Empty gate positions
             V_leica_prism_gate = [[None]*3 for i in range(3)]
+            
+            # Reset transforms
             self.Transform_robot_gate = None
             self.Transform_gate_leica = None
 
+            # Reset found transforms
             self.Tgl_found = False
             self.Trg_found = False
 
+            # Re-enable buttons
             for prism_label, button in self.buttons[group_label].items():
                 button.setEnabled(True)
+
         elif group_label == 'Robot':
             rospy.loginfo("Resetting Robot")
+            # Cancel in process tracking
             LS.LeicaStopTracking()
 
+            # Empty gate positions
             V_leica_prism_robot = [[None]*3 for i in range(3)]
+
+            # Reset transforms
             self.Transform_robot_gate = None
             self.Transform_robot_leica = None
 
+            # Reset found transforms
             self.Trl_found = False
             self.Trg_found = False
 
+            # Re-enable buttons
             for prism_label, button in self.buttons[group_label].items():
                 button.setEnabled(True)
+
         else:
             rospy.logerror("Invalid Group Label, Reset Failed")
             return -1
 
     def Solve_onclick(self,group_label):
         global V_gate_prism, V_leica_prism_gate, V_leica_prism_robot, V_robot_prism
+        
         if group_label == 'Gate':
             rospy.loginfo("Calculating Gate->Leica")
+            # Check that all prisms have been found
             if not any(None in pt for pt in V_leica_prism_gate):
+                # Solve from darpa frame to leica frame
                 self.Transform_gate_leica = tf_calc.solveForT(V_gate_prism,V_leica_prism_gate)
                 rospy.loginfo("Gate->Leica:\n%s, %s",\
                     tf.transformations.translation_from_matrix(self.Transform_gate_leica).__str__(),\
                     [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(Tgl, 'sxyz')].__str__())
+                # Set transform as found
                 self.Tgl_found = True
             else:
                 rospy.logwarn("Three prisms needed")
+        
         elif group_label == 'Robot':
             rospy.loginfo("Calculaing Robot->Leica")
             if not any(None in pt for pt in V_leica_prism_robot):
+                # Solve from robot frame to leica frame
                 self.Transform_robot_leica = tf_calc.solveForT(V_robot_prism,V_leica_prism_robot)
                 rospy.loginfo("Robot->Leica:\n%s, %s",\
                     tf.transformations.translation_from_matrix(self.Transform_robot_leica).__str__(),\
                     [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(Trl, 'sxyz')].__str__())
+                # Set transform as found
                 self.Trl_found = True
             else:
                 rospy.logwarn("Three prisms needed")
+        
         else:
            rospy.logerror("Invalid Group Label, Solve Failed")
            return -1 
@@ -503,14 +552,23 @@ class PrismMonitorWidget(QMainWindow):
     ################################################################################
 
 def main():
+    # Initialize rosnode
     rospy.init_node('prism_monitor_node')
+    # Initiazize application
     app = QApplication(sys.argv)
+    # Define the main widget
     mainWidget = PrismMonitorWidget(app)
+    # Create a window for the main widgit
     mainWindow = QMainWindow()
+    # Give the window a title
     mainWindow.setWindowTitle('Prism Position Tracker')
+    # Set the central widet as the main widget
     mainWindow.setCentralWidget(mainWidget)
+    # Set up a status bar
     mainWindow.setStatusBar(QStatusBar())
+    # Display the main window
     mainWindow.show()
+    # Exit on window close
     sys.exit(app.exec_())
     
 
