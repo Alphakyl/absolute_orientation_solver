@@ -57,12 +57,11 @@ def horns_method(v1,v2):
     c1 = np.append(c1,np.zeros((1,np.size(c1,1))),axis=0)
     c2 = np.append(c2,np.zeros((1,np.size(c2,1))),axis=0)
     trans = c2-s*np.dot(quat_mat,c1)
-    trans = trans.T
-    trans = trans_vector[0,0:3]
+    trans = [trans[0], trans[1],trans[2]]
     trans_mat = tf.transformations.translation_matrix(trans)
 
     # Full solution from rotation and translation matrix
-    solution = numpy.dot(trans_mat,quat_mat)
+    solution = np.dot(trans_mat,quat_mat)
 
     # Solve for residuals and error
     v1 = np.append(v1,np.zeros((1,np.size(v1,1))), axis=0)
@@ -73,14 +72,14 @@ def horns_method(v1,v2):
     # Return error and solution
     return error, solution
 
-def solveForT(self,v1,v2):
+def solveForT(v1,v2):
     # Minimize using horns method
     error, solution = horns_method(v1,v2)
     print "Calculated Error:"
     print error
     return solution
 
-def calcTF(self):   #Robot_origin->World Publisher
+def calcTF():   #Robot_origin->World Publisher
         global Vgp,Vlp,Vrq,Vlq,Tgr
 
         if len(Vgp)<3 or len(Vrq)<3:

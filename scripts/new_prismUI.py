@@ -283,8 +283,9 @@ class PrismMonitorWidget(QMainWindow):
         robotGroup = QGroupBox('Target Robot')
 
         # Creating a button for calculating full transform
-        self.button = QPushButton('Calculate')
-        robotGroupLayout.addWidget(self.button)
+        self.calculate_full_button = QPushButton('Calculate')
+        self.calculate_full_button.clicked.connect(self._calcTF)
+        robotGroupLayout.addWidget(self.calculate_full_button)
 
         # Creating a combo box with a list of potential robots
         self.robotOption = QComboBox()
@@ -548,7 +549,7 @@ class PrismMonitorWidget(QMainWindow):
                 self.Transform_gate_leica = tf_calc.solveForT(V_gate_prism,V_leica_prism_gate)
                 rospy.loginfo("Gate->Leica:\n%s, %s",\
                     tf.transformations.translation_from_matrix(self.Transform_gate_leica).__str__(),\
-                    [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(Tgl, 'sxyz')].__str__())
+                    [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(self.Transform_gate_leica, 'sxyz')].__str__())
                 # Set transform as found
                 self.Tgl_found = True
             else:
@@ -561,7 +562,7 @@ class PrismMonitorWidget(QMainWindow):
                 self.Transform_robot_leica = tf_calc.solveForT(V_robot_prism,V_leica_prism_robot)
                 rospy.loginfo("Robot->Leica:\n%s, %s",\
                     tf.transformations.translation_from_matrix(self.Transform_robot_leica).__str__(),\
-                    [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(Trl, 'sxyz')].__str__())
+                    [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(self.Transform_robot_leica, 'sxyz')].__str__())
                 # Set transform as found
                 self.Trl_found = True
             else:
