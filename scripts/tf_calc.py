@@ -57,7 +57,7 @@ def horns_method(v1,v2):
     c1 = np.append(c1,np.zeros((1,np.size(c1,1))),axis=0)
     c2 = np.append(c2,np.zeros((1,np.size(c2,1))),axis=0)
     trans = c2-s*np.dot(quat_mat,c1)
-    trans = [trans[0], trans[1],trans[2]]
+    trans = [trans[0],trans[1],trans[2]]
     trans_mat = tf.transformations.translation_matrix(trans)
 
     # Full solution from rotation and translation matrix
@@ -75,48 +75,47 @@ def horns_method(v1,v2):
 def solveForT(v1,v2):
     # Minimize using horns method
     error, solution = horns_method(v1,v2)
-    print "Calculated Error:"
-    print error
+    print "Calculated Error:", error
     return solution
 
-def calcTF():   #Robot_origin->World Publisher
-        global Vgp,Vlp,Vrq,Vlq,Tgr
+# def calcTF():   #Robot_origin->World Publisher
+#         global Vgp,Vlp,Vrq,Vlq,Tgr
 
-        if len(Vgp)<3 or len(Vrq)<3:
-            rospy.logerror("Invalid ground truth parameters")
-            return
+#         if len(Vgp)<3 or len(Vrq)<3:
+#             rospy.logerror("Invalid ground truth parameters")
+#             return
 
-        while not rospy.is_shutdown():
-            if self.need_to_reset_gate:
-                self.resetGate()
-            if self.need_to_reset_robot:
-                self.resetRobot()
-            if not any(None in pt for pt in Vlp) and not self.Tgl_found:
-                Tgl = self.solveForT(Vgp,Vlp)
-                rospy.loginfo("Gate->Leica:\n%s, %s",\
-                    tf.transformations.translation_from_matrix(Tgl).__str__(),\
-                    [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(Tgl, 'sxyz')].__str__())
-                self.Tgl_found = True
-            if not any(None in pt for pt in Vlq) and not self.Trl_found:
-                Trl = self.solveForT(Vrq,Vlq)
-                rospy.loginfo("Robot->Leica:\n%s, %s",\
-                    tf.transformations.translation_from_matrix(Trl).__str__(),\
-                    [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(Trl, 'sxyz')].__str__())
-                self.Trl_found = True
-            if self.Tgl_found and self.Trl_found:
-                Tgr = tf.transformations.concatenate_matrices(Tgl,tf.transformations.inverse_matrix(Trl))
-                Trg = tf.transformations.inverse_matrix(Tgr)
-                self.Trg = Trg
-                if not self.Trg_found:
-                    rospy.loginfo("Robot->Gate:\n%s, %s",\
-                        tf.transformations.translation_from_matrix(Trg).__str__(),\
-                        [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(Trg, 'sxyz')].__str__())
-                    if kyle_2d:
-                        rospy.loginfo("Projecting 3d transfrom to x-y plane...")
-                        yaw, pitch, roll = tf.transformations.euler_from_matrix(Trg[0:3,0:3], axes="szyx")
-                        R = tf.transformations.euler_matrix(yaw, 0.0, 0.0, axes="szyx")
-                        Trg[0:3, 0:3] = R[0:3, 0:3]
-                        rospy.loginfo("New (yaw, pitch, roll) = (%0.4f, %0.4f, %0.4f)" % (yaw*180.0/np.pi, 0.0, 0.0))
-                        self.Trg = Trg
-                self.Trg_found = True
-            time.sleep(1)
+#         while not rospy.is_shutdown():
+#             if self.need_to_reset_gate:
+#                 self.resetGate()
+#             if self.need_to_reset_robot:
+#                 self.resetRobot()
+#             if not any(None in pt for pt in Vlp) and not self.Tgl_found:
+#                 Tgl = self.solveForT(Vgp,Vlp)
+#                 rospy.loginfo("Gate->Leica:\n%s, %s",\
+#                     tf.transformations.translation_from_matrix(Tgl).__str__(),\
+#                     [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(Tgl, 'sxyz')].__str__())
+#                 self.Tgl_found = True
+#             if not any(None in pt for pt in Vlq) and not self.Trl_found:
+#                 Trl = self.solveForT(Vrq,Vlq)
+#                 rospy.loginfo("Robot->Leica:\n%s, %s",\
+#                     tf.transformations.translation_from_matrix(Trl).__str__(),\
+#                     [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(Trl, 'sxyz')].__str__())
+#                 self.Trl_found = True
+#             if self.Tgl_found and self.Trl_found:
+#                 Tgr = tf.transformations.concatenate_matrices(Tgl,tf.transformations.inverse_matrix(Trl))
+#                 Trg = tf.transformations.inverse_matrix(Tgr)
+#                 self.Trg = Trg
+#                 if not self.Trg_found:
+#                     rospy.loginfo("Robot->Gate:\n%s, %s",\
+#                         tf.transformations.translation_from_matrix(Trg).__str__(),\
+#                         [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(Trg, 'sxyz')].__str__())
+#                     if kyle_2d:
+#                         rospy.loginfo("Projecting 3d transfrom to x-y plane...")
+#                         yaw, pitch, roll = tf.transformations.euler_from_matrix(Trg[0:3,0:3], axes="szyx")
+#                         R = tf.transformations.euler_matrix(yaw, 0.0, 0.0, axes="szyx")
+#                         Trg[0:3, 0:3] = R[0:3, 0:3]
+#                         rospy.loginfo("New (yaw, pitch, roll) = (%0.4f, %0.4f, %0.4f)" % (yaw*180.0/np.pi, 0.0, 0.0))
+#                         self.Trg = Trg
+#                 self.Trg_found = True
+#             time.sleep(1)
