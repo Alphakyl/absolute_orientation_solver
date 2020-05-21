@@ -10,6 +10,8 @@ import leica_service as LS
 import tf
 import numpy as np 
 from geometry_msgs.msg import *
+from marble_origin_detection_msgs.srv import *
+from leica_ros.srv import *
 
 
 #import math
@@ -109,6 +111,18 @@ V_robot_prism = [AVAILABLE_BASE[current_base][key] for key in AVAILABLE_BASE[cur
 V_leica_prism_gate = [[None]*3 for i in range(3)]
 V_leica_prism_robot = [[None]*3 for i in range(3)]
 
+CURRENT_PRISM = {
+    "Gate": {
+        "Left" : "micro_360",
+        "Right": "micro_360",
+        "Top": "micro_360",
+    },
+    "Robot": {
+        "Left" : "micro_360",
+        "Right": "micro_360",
+        "Top": "micro_360",
+    }
+}
 
 class PrismMonitorWidget(QMainWindow):
     ##############################################################################
@@ -179,6 +193,7 @@ class PrismMonitorWidget(QMainWindow):
         for key in AVAILABLE_PRISMS:
             l.append(key)
         self.prismOptions[group_label][box_label].addItems(l)
+        self.prismOptions[group_label][box_label].currentIndexChanged.connect(partial(self._current_prism, group_label, box_label))
 
         # Adds layout to our widget
         boxLayout.addWidget(self.prismOptions[group_label][box_label])
@@ -370,6 +385,13 @@ class PrismMonitorWidget(QMainWindow):
         robot_ns = self.robotOption.currentText()
         print robot_ns
 
+    def _current_prism(self, group_label, prism_label):
+        global CURRENT_PRISM
+        CURRENT_PRISM[group_label][prism_label] = self.prismOptions[group_label][prism_label].currentText()
+        print group_label
+        print prism_label
+        print CURRENT_PRISM[group_label][prism_label]
+
     def _createExit(self):
         #Exit Button layout
         self.btnQuit = QPushButton('Exit')
@@ -397,11 +419,13 @@ class PrismMonitorWidget(QMainWindow):
         # Apply pose to the proper group, gate or robot
         if group_label == 'Gate':
             # Check that the returned pose isn't the default pose
-            if not all([i==0] for i in pos):
+            print pos
+            if not all([i==0 for i in pos]):
                 V_leica_prism_gate[self.point_from_label(prism_label)] = pos
+                print V_leica_prism_gate
 
             # Apply an offset based on the height of prisms
-            delta_z = AVAILABLE_PRISMS[prism_label]["z"]
+            delta_z = AVAILABLE_PRISMS[CURRENT_PRISM[group_label][prism_label]]["z"]
             if isinstance(delta_z, list):
                 ropsy.logerror("Multiple available prisms of same name.")
                 return pos
@@ -409,11 +433,11 @@ class PrismMonitorWidget(QMainWindow):
 
         elif group_label == 'Robot':
             # Check that the returned pose isn't the default pose
-            if not all([i==0] for i in pos):
+            if not all([i==0 for i in pos]):
                 V_leica_prism_robot[self.point_from_label(prism_label)] = pos
         
             # Apply an offset based on the height of prisms
-            delta_z = AVAILABLE_PRISMS[prism_label]["z"]
+            delta_z = AVAILABLE_PRISMS[CURRENT_PRISM[group_label][prism_label]]["z"]
             if isinstance(delta_z, list):
                 ropsy.logerror("Multiple available prisms of same name.")
                 return pos
@@ -426,9 +450,9 @@ class PrismMonitorWidget(QMainWindow):
     def point_from_label(self,label):
         # Creates a simple switch statement dictionary
         point = {
-            'Left':1,
-            'Top':2,
-            'Right':3
+            'Left':0,
+            'Top':1,
+            'Right':2,
             }
         return point.get(label)
 
