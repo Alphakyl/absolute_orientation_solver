@@ -106,8 +106,8 @@ AVAILABLE_GATES = {
 
 
 # Empty global variables for storing prism points (Given values and calculated from the Leica)
-V_gate_prism = [AVAILABLE_GATES[current_gate][key] for key in AVAILABLE_GATES[current_gate]]
-V_robot_prism = [AVAILABLE_BASE[current_base][key] for key in AVAILABLE_BASE[current_base]]
+V_gate_prism = [AVAILABLE_GATES[current_gate]['Vgp1'], AVAILABLE_GATES[current_gate]['Vgp2'], AVAILABLE_GATES[current_gate]['Vgp3']]
+V_robot_prism = [AVAILABLE_BASE[current_base]['Vrq1'], AVAILABLE_BASE[current_base]['Vrq2'], AVAILABLE_BASE[current_base]['Vrq3']]
 V_leica_prism_gate = [[None]*3 for i in range(3)]
 V_leica_prism_robot = [[None]*3 for i in range(3)]
 
@@ -367,18 +367,16 @@ class PrismMonitorWidget(QMainWindow):
 
         # Use the current value of gate and base to chose proper value for gate prisms for comparison
         current_gate = self.gateOption.currentText()
-        V_gate_prism = [AVAILABLE_GATES[current_gate][key] for key in AVAILABLE_GATES[current_gate]]
-        print current_gate
-        print V_gate_prism
+        V_gate_prism = [AVAILABLE_GATES[current_gate]['Vgp1'], AVAILABLE_GATES[current_gate]['Vgp2'], AVAILABLE_GATES[current_gate]['Vgp3']]
+        print current_gate, V_gate_prism
 
     def _current_base(self):
         global V_robot_prism, current_base
     
         # Use the current value of gate and base to chose proper value for gates and base prisms for comparison
         current_base = self.baseOption.currentText()
-        V_robot_prism = [AVAILABLE_BASE[current_base][key] for key in AVAILABLE_BASE[current_base]]
-        print current_base
-        print V_robot_prism
+        V_robot_prism = [AVAILABLE_BASE[current_base]['Vrq1'], AVAILABLE_BASE[current_base]['Vrq2'], AVAILABLE_BASE[current_base]['Vrq3']]
+        print current_base, V_robot_prism
 
     def _current_robot(self):
         global robot_ns
@@ -389,9 +387,7 @@ class PrismMonitorWidget(QMainWindow):
     def _current_prism(self, group_label, prism_label):
         global CURRENT_PRISM
         CURRENT_PRISM[group_label][prism_label] = self.prismOptions[group_label][prism_label].currentText()
-        print group_label
-        print prism_label
-        print CURRENT_PRISM[group_label][prism_label]
+        print group_label, prism_label, CURRENT_PRISM[group_label][prism_label]
 
     def _createExit(self):
         #Exit Button layout
@@ -420,10 +416,9 @@ class PrismMonitorWidget(QMainWindow):
         # Apply pose to the proper group, gate or robot
         if group_label == 'Gate':
             # Check that the returned pose isn't the default pose
-            print pos
+            # print pos
             if not all([i==0 for i in pos]):
                 V_leica_prism_gate[self.point_from_label(prism_label)] = pos
-                print V_leica_prism_gate
 
             # Apply an offset based on the height of prisms
             delta_z = AVAILABLE_PRISMS[CURRENT_PRISM[group_label][prism_label]]["z"]
