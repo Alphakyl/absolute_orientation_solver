@@ -1,518 +1,476 @@
 #!/usr/bin/python2
-"""
-Leica UI node to monitor the prism data
-
-Horn's Formuala : https://www.mathworks.com/matlabcentral/fileexchange/26186-absolute-orientation-horn-s-method
-"""
-
 import sys
 import rospy 
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-# 
-import math
+from functools import partial
+import tf_calc
+import leica_service as LS
 import tf
 import numpy as np 
-import tf2_ros
-from numpy import linalg as LA
-from numpy.linalg import inv
-from scipy.optimize import minimize
-from scipy.spatial.transform import Rotation
-import itertools as it
-import time
-# from QLabeledValue import *
-from leica_ros.msg import *
-from std_msgs.msg import *
-from std_srvs.srv import *
 from geometry_msgs.msg import *
+from leica_ros_msgs.srv import *
 
-import message_filters
 
-from leica_ros.srv import *
-from marble_origin_detection_msgs.srv import *
-# from marble_origin_detection_msgs.srv import SetTF, SetTFRequest, SetTFResponse
+#import math
+#import tf2_ros
+#from numpy import linalg as LA
+#from numpy.linalg import inv
+#from scipy.optimize import minimize
+#from scipy.spatial.transform import Rotation
+#import itertools as it
+#import time
+# from QLabeledValue import *
+#from leica_ros.msg import *
+#from std_msgs.msg import *
+#from std_srvs.srv import *
 
-import threading
+#import message_filters
+
+#from leica_ros.srv import *
+#from marble_origin_detection_msgs.srv import *
+#from marble_origin_detection_msgs.srv import SetTF, SetTFRequest, SetTFResponse
+
+#import threading
 
 # GLOBAL VARIABLES
-robot_ns = "A99"
-child_frame_id = "gate_leica"
+robot_ns = "H01"
+child_frame_id = "world"
+# child_frame_id = "gate_leica"
 parent_frame_id = "body_aligned_imu_link"
-baseB1name = "ugv"
-gateG1name = "alpha"
-kyle_2d = True
+current_gate = "Small"
+current_base = "UGV"
+project_transform_from_3d_to_2d = False
+num_publishes = 10
 
-# Urban: Alpha gate
-# Vgp1 = [0.4425,1.3275 , 0.844]
-# Vgp2 = [0.4535, -0.001, 2.741]
-# Vgp3 = [0.462, -1.3115, 0.846]
-
-# Urban: Beta gate
-# Vgp1 = [0.4545, 1.324, 0.8445]
-# Vgp2 = [0.4265, 0.002, 2.688]
-# Vgp3 = [0.441, -1.3405, 0.8425]
-
-# large test gate
-# Vgp1 = [0.0,1.523 , 1.07]
-# Vgp2 = [0.0, 0.0, 1.83]
-# Vgp3 = [0.0, -1.394, 0.755]
-
-# small test gate
-# Vgp1 = [-0.045, 0.100025, 0] # left
-# Vgp2 = [0.045, -0.100025, 0] # top
-# Vgp3 = [-0.045, -0.100025, 0] # right
-
-# UGVs w/ base plate v5
-# Vrq1 = [-0.045, 0.100025, -0.0045]
-# Vrq2 = [0.045, -0.100025, -0.0045]
-# Vrq3 = [-0.045, -0.100025, -0.0045]
-
-# UAVs on launch pad
-# Vrq1 = [-0.2, 0.25, -0.25]
-# Vrq2 = [0.2, -0.25, -0.25]
-# Vrq3 = [-0.2, -0.25, -0.25]
-
-# UAVs on launch pad corrected
-#Vrq1 = [-0.1, .25, -.205]
-#Vrq2 = [0.1,-0.25, -.205]
-#Vrq3 = [-0.1,-.25, -.205]
-
-# Vgp = [Vgp1,Vgp2,Vgp3]
-# Vrq = [Vrq1,Vrq2,Vrq3]
-Vgp = [[None]*3 for i in range(3)]
-Vrq = [[None]*3 for i in range(3)]
-Vlp = [[None]*3 for i in range(3)]
-Vlq = [[None]*3 for i in range(3)]
-
-AVAILABLE_PRISMS = [
-    {
-        "name"     : "big_360",
+# Dictionaries the hold informations on various prisms and bases
+AVAILABLE_PRISMS = {
+    "big_360": {
         "num"      : 3,
         "constant" : 34.4,
         "z"        : 0.0
-    },
-    {
-        "name"     : "mini_360",
+        },
+    "mini_360": {
         "num"      : 7,
         "constant" : 30.0, 
-        "z"        : 0.02159,
-    },
-    {
-        "name"     : "micro_360",
-        "num"      : 7,
+        "z"        : 0.02159
+        },
+    "micro_360": {
+        "num"     : 7,
         "constant" : 30.0,
-        "z"        : 0.01524,
-    },
-    {
-        "name"     : "mini_lp",
-        "num"      : 1,
+        "z"        : 0.01524
+        },
+    "mini_lp":  {
+        "num"     : 1,
         "constant" : 17.5,
-        "z"        : 0.0,
-    }
-]
+        "z"        : 0.0
+        }
+}
 
 AVAILABLE_ROBOTS = ["H01","H02","H03","T01","T02","T03","L01","A01","A02","A03","A99"]
 
-# List of base dictionaries added by Kyle
-AVAILABLE_BASE = [
-    {
-        "name"      : "ugv",
+# List of base dictionaries
+AVAILABLE_BASE = {
+    "UGV": {
         "Vrq1"      : [-0.045, 0.100025, -0.0045],
         "Vrq2"      : [0.045, -0.100025, -0.0045],
         "Vrq3"      : [-0.045, -0.100025, -0.0045],
     },
-    {
-        "name"      : "uav",
+    "UAV": {
         "Vrq1"      : [-0.25, -.1, -.205],
         "Vrq2"      : [0.25,0.1, -.205],
         "Vrq3"      : [0.25,-.1, -.205],
     }
-]
+}
 
-# List of gate dictionaries added by Kyle
-AVAILABLE_GATES = [
-    {
-        "name"      : "alpha",
+# List of gate dictionaries
+AVAILABLE_GATES = {
+    "Alpha": {
         "Vgp1"      : [0.4425,1.3275 , 0.844],
         "Vgp2"      : [0.4535, -0.001, 2.741],
         "Vgp3"      : [0.462, -1.3115, 0.846],
     },
-    {
-        "name"      : "beta",
+    "Beta": {
         "Vgp1"      : [0.4545, 1.324, 0.8445],
         "Vgp2"      : [0.4265, 0.002, 2.688],
         "Vgp3"      : [0.441, -1.3405, 0.8425],
     },
-    {
-        "name"      : "small",
+    "Small": {
         "Vgp1"      : [-0.045, 0.100025, 0], # left
         "Vgp2"      : [0.045, -0.100025, 0], # top
         "Vgp3"      : [-0.045, -0.100025, 0], # right
     }
-]
-
-# Define Vgp and Vrq added by Kyle
-
-for i in range(len(AVAILABLE_GATES)):
-    if AVAILABLE_PRISMS[i]["name"]==gateG1name:
-        Vgp = [AVAILABLE_GATES[i]["Vgp1"], AVAILABLE_GATES[i]["Vgp2"], AVAILABLE_GATES[i]["Vgp3"]]
-        break
-    else:
-        print "Gate name does not exist"
-        #rospy.logerror("Gate name does not exist")
-
-for i in range(len(AVAILABLE_BASE)):
-    if AVAILABLE_BASE[i]["name"]==baseB1name:
-        Vrq = [AVAILABLE_BASE[i]["Vrq1"], AVAILABLE_GATES[i]["Vrq2"], AVAILABLE_GATES[i]["Vrq3"]]
-        break
-    else:
-        #rospy.logerror("Base name does not exist")
-        print "Gate name does not exist"
+}
 
 
+# Empty global variables for storing prism points (Given values and calculated from the Leica)
+V_gate_prism = [AVAILABLE_GATES[current_gate]['Vgp1'], AVAILABLE_GATES[current_gate]['Vgp2'], AVAILABLE_GATES[current_gate]['Vgp3']]
+V_robot_prism = [AVAILABLE_BASE[current_base]['Vrq1'], AVAILABLE_BASE[current_base]['Vrq2'], AVAILABLE_BASE[current_base]['Vrq3']]
+V_leica_prism_gate = [[None]*3 for i in range(3)]
+V_leica_prism_robot = [[None]*3 for i in range(3)]
 
-class PrismMonitorWidget(QWidget): 
-    commandUpdate = pyqtSignal(Transform)
-    # Current_P = prism_tf()
-    # counter = 0
+CURRENT_PRISM = {
+    "Gate": {
+        "Left" : "micro_360",
+        "Right": "micro_360",
+        "Top": "micro_360",
+    },
+    "Robot": {
+        "Left" : "micro_360",
+        "Right": "micro_360",
+        "Top": "micro_360",
+    }
+}
 
+class PrismMonitorWidget(QMainWindow):
+    ##############################################################################
+    # UI Stuff Here
+    ###############################################################################
     def __init__(self,parent = None):
-        global robot_ns, baseB1name, gateG1name
-        # self.counter = 0
-        # self.Current_P = prism_tf()
-
+        # not sure what super does
         super(PrismMonitorWidget,self).__init__()
-        layout = QVBoxLayout()
+        # Create a vertical layout (separate stuff vertically)
+        self.layout = QVBoxLayout()
+        # Create the central widget
+        self._centralWidget=QWidget(self)
+        # Set the central widget to be the main widget
+        self.setCentralWidget(self._centralWidget)
+        # Define the layout of the central widget (vertical layou from above)
+        self._centralWidget.setLayout(self.layout)
 
-        # Begin GUI edits added by Kyle
-        # initial group
-        initialGroupLayout = QVBoxLayout()
-        initialGroup = QGroupBox('Initialization')
-
-        # initial base
-        ibaseGroupLayout = QHBoxLayout()
-        ibaseGroup = QGroupBox('Initialize Base')
-        self.baseB1toggle = QPushButton('Toggle')
-        self.baseB1toggle.clicked.connect(self.baseB1toggle_onclick)
-        boxLayout.addWidget(self.baseB1toggle)
-
-        self.baselabel = QLabel(baseB1name)
-        boxLayout.addWidget(self.baselabel)
+        # Transforms found set to false
+        self.Trg_found = False
+        self.Trl_found = False
+        self.Tgl_found = False
         
-        # initial gate
-        igateGroupLayout = QHBoxLayout()
-        igateGroup = QGroubBox('Initialize Gate')
-        self.gateG1toggle = QPushButton('Toggle')
-        self.gateG1toggle.clicked.connect(self.gateG1toggle_onclick)
-        boxLayout.addWidget(self.gateG1toggle)
+        # Store empty transforms
+        self.Transform_robot_gate = None
+        self.Transform_gate_leica = None
+        self.Transform_robot_leica = None
 
-        self.gatelabel = Qlabel(gateG1name)
-        boxLayout.addWidget(self.gatelabel)
+        # Create publisher dictionary to store a publisher per robot
+        self.pub = {}
+        for robot in AVAILABLE_ROBOTS:
+            robot_topic = '/' + robot + '/set_world_tf'
+            self.pub[robot] = rospy.Publisher(robot_topic, TransformStamped, queue_size=10)
 
-        # initial zero
-        izeroGroupLayout = QHBoxLayout()
-        izeroGroup = QGroupBox('Initialize 2D or 3D')
-        self.zeroZ1toggle = QPushButton('Toggle')
-        self.zeroZ1toggle.clicked.connect(self.zeroZ1toggle_onclick)
-        boxLayout.addWidget(self.zeroZ1toggle)
+        # Create a holder dictionary for buttons and combo boxes
+        self.buttons = {}
+        self.prismOptions = {}
 
-        # gate group
+        # Define the Gate layout (First part of central widget)
+        self._createGateCalculate()
+        # Define the robot layout (Second part of the central widget)
+        self._createRobotCalculate()
+        # Define the target layout (Third part of central widget)
+        self._createRobotTarget()
+        # Create an exit button for convenience
+        self._createExit()
+
+        # Wire up buttons to do various functions
+        self._connectSignals()
+
+        # launch publisher thread
+        # self.pub_thread = threading.Thread(target=self._calcTF, args=())
+        # self.pub_thread.start()
+
+    def _createButtonAndPrismComboBox(self, group_label, box_label):
+        # Generic button and combo box layout for prism selection
+
+        # Creates a horizontal layout
+        boxLayout = QHBoxLayout()
+        groupBox = QGroupBox(box_label)
+
+        # Creates a button and adds it to a dictionary of dictionaries for later use
+        self.buttons[group_label][box_label] = QPushButton('Calculate')
+        boxLayout.addWidget(self.buttons[group_label][box_label])
+
+        # Creates a combo box and adds it to a dictionary of dictionaries for later use
+        self.prismOptions[group_label][box_label] = QComboBox()
+        l = []
+        for key in AVAILABLE_PRISMS:
+            l.append(key)
+        self.prismOptions[group_label][box_label].addItems(l)
+        self.prismOptions[group_label][box_label].currentIndexChanged.connect(partial(self._current_prism, group_label, box_label))
+
+        # Adds layout to our widget
+        boxLayout.addWidget(self.prismOptions[group_label][box_label])
+        groupBox.setLayout(boxLayout)
+        
+        # Returns the layout for use outside this function
+        return groupBox
+    
+    def _createGateCalculate(self):
+        # Creating the gate functions in the GUI
         prismGroupLayout = QVBoxLayout()
-        prismGroup = QGroupBox('Gate') 
+        # Label overall box as Gate
+        prismGroup = QGroupBox('Gate')
 
-        #Prism 1
-        boxLayout = QHBoxLayout()
-        groupBox = QGroupBox('Left') 
+        # Add dropdown for Gate
+        self.gateOption = QComboBox()
+        l = []
+        for key in AVAILABLE_GATES:
+            l.append(key)
+        self.gateOption.addItems(l)
+        prismGroupLayout.addWidget(self.gateOption)
+        self.gateOption.currentIndexChanged.connect(self._current_gate)    
 
-        self.prismG1 = QPushButton('Calculate')
-        self.prismG1.clicked.connect(self.prismG1_onclick) 
-        boxLayout.addWidget(self.prismG1)
+        # Add buttons and dropdowns for each prism
+        group_label = 'Gate'
+        # Creates the outer key value as an empty dictionary
+        self.buttons[group_label] = {}
+        self.prismOptions[group_label] = {}
+        prismGroupLayout.addWidget(self._createButtonAndPrismComboBox(group_label,'Left'))
+        prismGroupLayout.addWidget(self._createButtonAndPrismComboBox(group_label,'Top'))
+        prismGroupLayout.addWidget(self._createButtonAndPrismComboBox(group_label,'Right'))
 
-        self.prismG1toggle = QPushButton('Toggle')
-        self.prismG1toggle.clicked.connect(self.prismG1toggle_onclick) 
-        boxLayout.addWidget(self.prismG1toggle)
+        # Create a button to call Horn's Method
+        self.btnSolveGate = QPushButton('Calculate G->L TF')
+        self.btnSolveGate.clicked.connect(partial(self.Solve_onclick, 'Gate'))
+        prismGroupLayout.addWidget(self.btnSolveGate)
 
-        self.prismG1name = "mini_lp"
-        self.prismG1namelabel = QLabel(self.prismG1name) 
-        boxLayout.addWidget(self.prismG1namelabel)
-
-        groupBox.setLayout(boxLayout)
-        prismGroupLayout.addWidget(groupBox)
-        # layout.addWidget(groupBox)
-
-        #Prism 2
-        boxLayout = QHBoxLayout()
-        groupBox = QGroupBox('Top') 
-
-        self.prismG2 = QPushButton('Calculate') 
-        self.prismG2.clicked.connect(self.prismG2_onclick) 
-        boxLayout.addWidget(self.prismG2)
-
-        self.prismG2toggle = QPushButton('Toggle')
-        self.prismG2toggle.clicked.connect(self.prismG2toggle_onclick) 
-        boxLayout.addWidget(self.prismG2toggle)
-
-        self.prismG2name = "mini_lp"
-        self.prismG2namelabel = QLabel(self.prismG2name) 
-        boxLayout.addWidget(self.prismG2namelabel)  
-
-        groupBox.setLayout(boxLayout)
-        prismGroupLayout.addWidget(groupBox)
-        # layout.addWidget(groupBox)
-        
-        #Prism 3
-        boxLayout = QHBoxLayout()
-        groupBox = QGroupBox('Right') 
-
-        self.prismG3 = QPushButton('Calculate') 
-        self.prismG3.clicked.connect(self.prismG3_onclick) 
-        boxLayout.addWidget(self.prismG3)
-
-        self.prismG3toggle = QPushButton('Toggle')
-        self.prismG3toggle.clicked.connect(self.prismG3toggle_onclick) 
-        boxLayout.addWidget(self.prismG3toggle)
-
-        self.prismG3name = "mini_lp"
-        self.prismG3namelabel = QLabel(self.prismG3name) 
-        boxLayout.addWidget(self.prismG3namelabel)  
-
-        groupBox.setLayout(boxLayout)
-        prismGroupLayout.addWidget(groupBox)
-        # layout.addWidget(groupBox)
-
-        # reset gate
-        self.btnResetGate = QPushButton('Reset Gate')
-        self.btnResetGate.clicked.connect(self.btnResetGate_onclick)
+        # Reset Gate
+        self.btnResetGate = QPushButton('Reset G->L TF')
+        self.btnResetGate.clicked.connect(partial(self.Reset_onclick, 'Gate'))
         prismGroupLayout.addWidget(self.btnResetGate)
 
-        # gate group
+        # Layout the gate group in the GUI
         prismGroup.setLayout(prismGroupLayout)
-        layout.addWidget(prismGroup)
+        self.layout.addWidget(prismGroup)
 
-        # robot group
+    def _createRobotCalculate(self):
+        # Creating the robot fucntions in the GUI
         prismGroupLayout = QVBoxLayout()
         prismGroup = QGroupBox('Robot')
 
-        #Prism 4
-        boxLayout = QHBoxLayout()
-        groupBox = QGroupBox('Left') 
+        # Add dropdown for Robot_Base type
+        self.baseOption = QComboBox()
+        l = []
+        for key in AVAILABLE_BASE:
+            l.append(key)
+        self.baseOption.addItems(l)    
+        prismGroupLayout.addWidget(self.baseOption)
+        self.baseOption.currentIndexChanged.connect(self._current_base)    
 
-        self.prismR1 = QPushButton('Calculate')
-        self.prismR1.clicked.connect(self.prismR1_onclick) 
-        boxLayout.addWidget(self.prismR1)
+        # Add buttons and dropdowns for each prism
+        group_label = 'Robot'
+        # Creates outer key value as an empty dictionary
+        self.buttons[group_label]={}
+        self.prismOptions[group_label]={}
+        prismGroupLayout.addWidget(self._createButtonAndPrismComboBox(group_label, 'Left'))
+        prismGroupLayout.addWidget(self._createButtonAndPrismComboBox(group_label, 'Top'))
+        prismGroupLayout.addWidget(self._createButtonAndPrismComboBox(group_label, 'Right'))
 
-        self.prismR1toggle = QPushButton('Toggle')
-        self.prismR1toggle.clicked.connect(self.prismR1toggle_onclick) 
-        boxLayout.addWidget(self.prismR1toggle)
-
-        self.prismR1name = "mini_360"
-        self.prismR1namelabel = QLabel(self.prismR1name) 
-        boxLayout.addWidget(self.prismR1namelabel)
-
-        groupBox.setLayout(boxLayout)
-        prismGroupLayout.addWidget(groupBox)
-        # layout.addWidget(groupBox)
-
-        #Prism 5
-        boxLayout = QHBoxLayout()
-        groupBox = QGroupBox('Top') 
-
-        self.prismR2 = QPushButton('Calculate') 
-        self.prismR2.clicked.connect(self.prismR2_onclick) 
-        boxLayout.addWidget(self.prismR2)
-
-        self.prismR2toggle = QPushButton('Toggle')
-        self.prismR2toggle.clicked.connect(self.prismR2toggle_onclick) 
-        boxLayout.addWidget(self.prismR2toggle)
-
-        self.prismR2name = "mini_360"
-        self.prismR2namelabel = QLabel(self.prismR2name) 
-        boxLayout.addWidget(self.prismR2namelabel)  
-
-        groupBox.setLayout(boxLayout)
-        prismGroupLayout.addWidget(groupBox)
-        # layout.addWidget(groupBox)
+        # Create a button to call Horn's Method
+        self.btnSolveRobot = QPushButton('Calculate R->L TF')
+        self.btnSolveRobot.clicked.connect(partial(self.Solve_onclick, 'Robot'))
+        prismGroupLayout.addWidget(self.btnSolveRobot)
         
-        #Prism 6
-        boxLayout = QHBoxLayout()
-        groupBox = QGroupBox("Right") 
-
-        self.prismR3 = QPushButton('Calculate') 
-        self.prismR3.clicked.connect(self.prismR3_onclick) 
-        boxLayout.addWidget(self.prismR3)
-
-        self.prismR3toggle = QPushButton('Toggle')
-        self.prismR3toggle.clicked.connect(self.prismR3toggle_onclick) 
-        boxLayout.addWidget(self.prismR3toggle)
-
-        self.prismR3name = "mini_360"
-        self.prismR3namelabel = QLabel(self.prismR3name) 
-        boxLayout.addWidget(self.prismR3namelabel)  
-
-        groupBox.setLayout(boxLayout)
-        prismGroupLayout.addWidget(groupBox)
-        # layout.addWidget(groupBox)
-
-        self.btnResetRobot = QPushButton('Reset Robot')
-        self.btnResetRobot.clicked.connect(self.btnResetRobot_onclick)
+        # Reset Robot
+        self.btnResetRobot = QPushButton('Reset R->L TF')
+        self.btnResetRobot.clicked.connect(partial(self.Reset_onclick, 'Robot'))
         prismGroupLayout.addWidget(self.btnResetRobot)
 
-        # robot group
+        # Layout the robot group in the GUI
         prismGroup.setLayout(prismGroupLayout)
-        layout.addWidget(prismGroup)
+        self.layout.addWidget(prismGroup)
+    
+    def _createRobotTarget(self):
+        # Creating the target robot functions in the GUI for passing TFs
+        robotGroupLayout = QHBoxLayout()
+        robotGroup = QGroupBox('Target Robot')
 
-        # send tf and toggle robot layout
-        boxLayout = QHBoxLayout()
-        groupBox = QGroupBox('Target Robot') 
+        # Creating a button for calculating full transform
+        self.calculate_full_button = QPushButton('Calculate')
+        self.calculate_full_button.clicked.connect(self._calcTF)
+        robotGroupLayout.addWidget(self.calculate_full_button)
 
-        self.robottoggle = QPushButton('Toggle')
-        self.robottoggle.clicked.connect(self.robottoggle_onclick) 
-        boxLayout.addWidget(self.robottoggle)
+        # Creating a combo box with a list of potential robots
+        self.robotOption = QComboBox()
+        self.robotOption.addItems(AVAILABLE_ROBOTS)
+        self.robotOption.currentIndexChanged.connect(self._current_robot)
+        robotGroupLayout.addWidget(self.robotOption)
 
-        self.robotnslabel = QLabel(robot_ns) 
-        boxLayout.addWidget(self.robotnslabel)
-
+        # Creating a sendTF button
         self.sendtfbtn = QPushButton('Send TF')
-        self.sendtfbtn.clicked.connect(self.sendTF) 
-        boxLayout.addWidget(self.sendtfbtn)
+        self.sendtfbtn.clicked.connect(self._sendTF)    
+        robotGroupLayout.addWidget(self.sendtfbtn)
 
-        groupBox.setLayout(boxLayout)
-        layout.addWidget(groupBox)
-       
+        # Adding layout to GUI
+        robotGroup.setLayout(robotGroupLayout)
+        self.layout.addWidget(robotGroup)
+
+    #################################################################
+    # Button connections and general functions here
+    #################################################################
+    def _sendTF(self):
+        global child_frame_id, parent_frame_id, robot_ns, num_publishes
+
+        # Check if the tranform exists and is the correct size
+        if self.Trg_found == False:
+            rospy.logwarn("Can't send TF. Tf not found yet.")
+            return
+        if not self.Transform_robot_gate.shape==(4,4):
+            rospy.logwarn("Can't send TF. Tf is wrong size.")
+            return
+        
+        # Create a transform stamped message from the calculated transform
+        tf_msg = TransformStamped()
+        tf_msg.header.stamp = rospy.Time.now()
+        tf_msg.header.frame_id = parent_frame_id
+        tf_msg.child_frame_id = child_frame_id
+        tf_msg.transform.translation.x = tf.transformations.translation_from_matrix(self.Transform_robot_gate)[0]
+        tf_msg.transform.translation.y = tf.transformations.translation_from_matrix(self.Transform_robot_gate)[1]
+        tf_msg.transform.translation.z = tf.transformations.translation_from_matrix(self.Transform_robot_gate)[2]
+        tf_msg.transform.rotation.x = tf.transformations.quaternion_from_matrix(self.Transform_robot_gate)[0]
+        tf_msg.transform.rotation.y = tf.transformations.quaternion_from_matrix(self.Transform_robot_gate)[1]
+        tf_msg.transform.rotation.z = tf.transformations.quaternion_from_matrix(self.Transform_robot_gate)[2]
+        tf_msg.transform.rotation.w = tf.transformations.quaternion_from_matrix(self.Transform_robot_gate)[3]
+
+        # Publish the message num_publishes times to the robot_ns publisher
+        for i in range(num_publishes):
+            self.pub[robot_ns].publish(tf_msg)
+        
+    def _calcTF(self):
+        global project_transform_from_3d_to_2d
+
+        # Check if gate and robot to leica transforms are available
+        if not self.Tgl_found:
+            rospy.logwarn("Missing Gate->Leica Transform")
+            return
+        if not self.Trl_found:
+            rospy.logwarn("Missing Robot->Leica Transform")
+            return
+
+        # Trg = Trl*(Tgl)^(-1)
+        self.Transform_robot_gate = tf.transformations.concatenate_matrices(self.Transform_robot_leica,tf.transformations.inverse_matrix(self.Transform_gate_leica))
+
+        # If the transform has not been found previously set the transform
+        if not self.Trg_found:
+            rospy.loginfo("Robot->Gate:\n%s, %s",\
+                tf.transformations.translation_from_matrix(self.Transform_robot_gate).__str__(),\
+                [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(self.Transform_robot_gate, 'sxyz')].__str__())
+            # Legacy in case we need to project to 2d in the future
+            if project_transform_from_3d_to_2d:
+                rospy.loginfo("Projecting 3d transfrom to x-y plane...")
+                yaw, pitch, roll = tf.transformations.euler_from_matrix(self.Transform_robot_gate[0:3,0:3], axes="szyx")
+                R = tf.transformations.euler_matrix(yaw, 0.0, 0.0, axes="szyx")
+                self.Transform_robot_gate[0:3, 0:3] = R[0:3, 0:3]
+                rospy.loginfo("New (yaw, pitch, roll) = (%0.4f, %0.4f, %0.4f)" % (yaw*180.0/np.pi, 0.0, 0.0))
+        # Mark TF as found
+        self.Trg_found = True
+
+    def _current_gate(self):
+        global V_gate_prism, current_gate
+
+        # Use the current value of gate and base to chose proper value for gate prisms for comparison
+        current_gate = self.gateOption.currentText()
+        V_gate_prism = [AVAILABLE_GATES[current_gate]['Vgp1'], AVAILABLE_GATES[current_gate]['Vgp2'], AVAILABLE_GATES[current_gate]['Vgp3']]
+        print current_gate, V_gate_prism
+
+    def _current_base(self):
+        global V_robot_prism, current_base
+    
+        # Use the current value of gate and base to chose proper value for gates and base prisms for comparison
+        current_base = self.baseOption.currentText()
+        V_robot_prism = [AVAILABLE_BASE[current_base]['Vrq1'], AVAILABLE_BASE[current_base]['Vrq2'], AVAILABLE_BASE[current_base]['Vrq3']]
+        print current_base, V_robot_prism
+
+    def _current_robot(self):
+        global robot_ns
+        # Set the current robot to the one shown in the combo box
+        robot_ns = self.robotOption.currentText()
+        print robot_ns
+
+    def _current_prism(self, group_label, prism_label):
+        global CURRENT_PRISM
+        CURRENT_PRISM[group_label][prism_label] = self.prismOptions[group_label][prism_label].currentText()
+        print group_label, prism_label, CURRENT_PRISM[group_label][prism_label]
+
+    def _createExit(self):
         #Exit Button layout
         self.btnQuit = QPushButton('Exit')
         self.btnQuit.clicked.connect(self.btnQuit_onclick)
-        layout.addWidget(self.btnQuit)
+        self.layout.addWidget(self.btnQuit)
 
+    def btnQuit_onclick(self):
+        # self.pub_thread.join()
+        self.parent().close()
 
-        self.setLayout(layout)
+    def _connectSignals(self):
+        # Wires buttons to connection script
+        for group_label in self.buttons:
+            for prism_label, button in self.buttons[group_label].items():
+                button.clicked.connect(partial(self.find_location,group_label,prism_label))
+    
+    def find_location(self,group_label,prism_label):
+        global V_leica_prism_gate, V_leica_prism_robot
 
-        self.Tgl_found = False
-        self.Trl_found = False
-        self.Trg_found = False
-        self.need_to_reset_gate = False
-        self.need_to_reset_robot = False
+        # For the correct group label and prism label find the TF
+        rospy.loginfo("Calculating %s %s location", group_label, prism_label)
+        print group_label, prism_label
+        pos = self.getTFOnClick(self.buttons[group_label][prism_label],self.prismOptions[group_label][prism_label].currentText())
         
-        # self.LeicaStopTracking()
+        # Apply pose to the proper group, gate or robot
+        if group_label == 'Gate':
+            # Check that the returned pose isn't the default pose
+            # print pos
+            if not all([i==0 for i in pos]):
+                V_leica_prism_gate[self.point_from_label(prism_label)] = pos
 
+            # Apply an offset based on the height of prisms
+            delta_z = AVAILABLE_PRISMS[CURRENT_PRISM[group_label][prism_label]]["z"]
+            if isinstance(delta_z, list):
+                ropsy.logerror("Multiple available prisms of same name.")
+                return pos
+            V_gate_prism[self.point_from_label(prism_label)][2] += delta_z
 
-        # launch publisher thread
-        self.pub_thread = threading.Thread(target=self.calcTF, args=())
-        self.pub_thread.start()
+        elif group_label == 'Robot':
+            # Check that the returned pose isn't the default pose
+            if not all([i==0 for i in pos]):
+                V_leica_prism_robot[self.point_from_label(prism_label)] = pos
+        
+            # Apply an offset based on the height of prisms
+            delta_z = AVAILABLE_PRISMS[CURRENT_PRISM[group_label][prism_label]]["z"]
+            if isinstance(delta_z, list):
+                ropsy.logerror("Multiple available prisms of same name.")
+                return pos
+            V_robot_prism[self.point_from_label(prism_label)][2] += delta_z
+        
+        else:
+            rospy.logerror("Invalid Group Label")
+            return pos
 
-    def LeicaSetPrismType(self,prism_name):
-        # try:
-        #     rospy.wait_for_service('leica_node/set_prism_type',timeout=5)
-        # except rospy.ServiceException as e:
-        #     rospy.logwarn("Service call failed: %s",e)
-        #     return
-        set_prism_type_svc = rospy.ServiceProxy('leica_node/set_prism_type', SetPrismType)
-        try:
-            rospy.loginfo("Setting to prism: %s",prism_name)
-            set_prism_type_req = SetPrismTypeRequest()
-            if prism_name=="micro_360":
-                set_prism_type_req.name = "mini_360"
-            else:
-                set_prism_type_req.name = prism_name
-            set_prism_type_resp = set_prism_type_svc(set_prism_type_req)
-        except rospy.ServiceException as e:
-            rospy.logwarn("Service call failed: %s",e)
-            return 
-        rospy.loginfo("Prism set to %s",prism_name)
-        return set_prism_type_resp
-
-    def LeicaGetPrismType(self):
-        # try rospy.wait_for_service('leica_node/get_prism_type',timeout=5):
-        #     continue
-        # except rospy.ServiceException as e:
-        #     rospy.logwarn("Service call failed: %s",e)
-        get_prism_type_svc = rospy.ServiceProxy('leica_node/get_prism_type', GetPrismType)
-        try:
-            rospy.loginfo("Getting current prism name")
-            get_prism_type_resp = get_prism_type_svc()
-        except rospy.ServiceException as e:
-            rospy.logwarn("Service call failed: %s",e)
-            return 
-        current_prism_name = get_prism_type_resp.name
-        rospy.loginfo("Current prism: %s",current_prism_name)
-        return current_prism_name
-
-    def LeicaStartTracking(self):
-        # try rospy.wait_for_service('leica_node/start_tracking',timeout=5):
-        #     continue
-        # except rospy.ServiceException as e:
-        #     rospy.logwarn("Service call failed: %s",e)
-        start_tracking_svc = rospy.ServiceProxy('leica_node/start_tracking', StartTracking)
-        try:
-            rospy.loginfo("Starting tracking")
-            start_tracking_resp = start_tracking_svc()
-            # rospy.loginfo("StartTrackingResponse: %s",start_tracking_resp.__str__())
-        except rospy.ServiceException as e:
-            rospy.logwarn("Service call failed: %s",e)
-            return
-        rospy.loginfo("Tracking started")
-        return start_tracking_resp
-
-    def LeicaStopTracking(self):
-        # try rospy.wait_for_service('leica_node/stop_tracking',timeout=5):
-        #     continue
-        # except rospy.ServiceException as e:
-        #     rospy.logwarn("Service call failed: %s",e)
-        stop_tracking_svc = rospy.ServiceProxy('leica_node/stop_tracking', SetBool)
-        try:
-            rospy.loginfo("Stopping tracking")
-            stop_tracking_req = SetBoolRequest()
-            stop_tracking_req.data = False
-            stop_tracking_resp = stop_tracking_svc(stop_tracking_req)
-            # rospy.loginfo("StopTrackingResponse: %s",stop_tracking_resp.__str__())
-        except rospy.ServiceException as e:
-            rospy.logwarn("Service call failed: %s",e)
-            return 
-        rospy.loginfo("Tracking stopped")
-        return stop_tracking_resp
-
-    def LeicaGetPos(self): 
-        pos = [0, 0, 0]
-        try:
-            msg = rospy.wait_for_message("leica_node/position", PointStamped, 5.0)
-            pos = [msg.point.x, msg.point.y, msg.point.z]
-        except rospy.exceptions.ROSException as e:
-            rospy.logwarn("Service call failed: %s",e)
-        return pos
+    def point_from_label(self,label):
+        # Creates a simple switch statement dictionary
+        point = {
+            'Left':0,
+            'Top':1,
+            'Right':2,
+            }
+        return point.get(label)
 
     def getTFOnClick(self,prism_btn,prism_name):
+        # Create a dummy point
         pos = [0,0,0]
-           
+
+        # Disable prism button   
         prism_btn.setEnabled(False)
-        # global Vlp,Vgp
+
         # set prism type in Leica to that which is currently displayed in the GUI
-        self.LeicaSetPrismType(prism_name)
+        LS.LeicaSetPrismType(prism_name)
 
-        # # start Leica tracking
-        # self.LeicaStartTracking()
-        # # get tf
-        # count = 0
-        # pos = self.LeicaGetPos()
-        # while any([i==0 for i in pos]):
-        #     count+=1
-        #     if count<5:
-        #         pos = self.LeicaGetPos()
-        #     else:
-        #         rospy.logwarn("Cannot get pos from Leica. Aborting.")
-        #         self.LeicaStopTracking()
-        #         return
-        # rospy.loginfo("Got pos: %s",pos)
-        # # stop Leica tracking
-        # self.LeicaStopTracking()
-
+        # Check if we have the position
         got_pos = False
         no_fails = 0
         max_no_fails = 5
         while not got_pos:
-            self.LeicaStartTracking()
-            pos = self.LeicaGetPos()
+            # Run tracking
+            LS.LeicaStartTracking()
+            pos = LS.LeicaGetPos()
             got_pos = not all([i==0 for i in pos])
+            # If failure
             if not got_pos:
                 no_fails += 1
                 if no_fails<max_no_fails:
@@ -521,322 +479,121 @@ class PrismMonitorWidget(QWidget):
                 else:
                     rospy.logwarn("Cannot get pos from Leica. Aborting.")
                     got_pos = True
+                    # Re-enable button on total failure
                     prism_btn.setEnabled(True)
-            self.LeicaStopTracking()
+            # End tracking
+            LS.LeicaStopTracking()
         return pos
 
-    # Added by Kyle, gate type toggle
-    def toggleGateType(self, current_gate_name):
-        current_idx = next((i for i in range(len(AVAILABLE_GATES)) if AVAILABLE_GATES[i]["name"]==current_gate_name),None)
-        if current_idx is None:
-            rospy.logwarn("The current gate name is invalid")
-            return
-        next_idx = current_idx+1
-        if next_idx >= len(AVAILABLE_GATES):
-            next_idx = 0
-        new_gate_name = AVAILABLE_GATES[next_idx]["name"]
-        return new_gate_name
+    def Reset_onclick(self, group_label):
+        global V_gate_prism, V_leica_prism_gate, V_leica_prism_robot, V_robot_prism
+        
+        if group_label == 'Gate':
+            rospy.loginfo("Resetting Gate")
+            # Cancel in process tracking
+            LS.LeicaStopTracking()
 
-    # Added by Kyle, base type toggle 
-    def toggleRobotBase(self,current_robot_base_name):
-        current_idx = next((i for i in range(len(AVAILABLE_BASE)) if AVAILABLE_BASE[i]["name"]==current_base_name),None)
-        if current_idx is None:
-            rospy.logwarn("The current base name is invalid")
-            return
-        next_idx = current_idx+1
-        if next_idx >= len(AVAILABLE_BASE):
-            next_idx = 0
-        new_base_name = AVAILABLE_BASE[next_idx]["name"]
-        return new_base_name
-    
-    
-    def togglePrismType(self,current_prism_name):
-        # current_prism_name = self.LeicaGetPrismType()
-        current_idx = next((i for i in range(len(AVAILABLE_PRISMS)) if AVAILABLE_PRISMS[i]["name"]==current_prism_name),None)
-        if current_idx is None:
-            rospy.logwarn("The current prism name is invalid")
-            return
-        next_idx = current_idx+1
-        if next_idx >= len(AVAILABLE_PRISMS):
-            next_idx = 0
-        new_prism_name = AVAILABLE_PRISMS[next_idx]["name"]
-        return new_prism_name
+            # Empty gate positions
+            V_leica_prism_gate = [[None]*3 for i in range(3)]
+            
+            # Reset transforms
+            self.Transform_robot_gate = None
+            self.Transform_gate_leica = None
 
-    def toggleRobot(self,current_robot_name):
-        current_idx = next((i for i in range(len(AVAILABLE_ROBOTS)) if AVAILABLE_ROBOTS[i]==current_robot_name),None)
-        if current_idx is None:
-            rospy.logwarn("The current robot name is invalid")
-            return
-        next_idx = current_idx+1
-        if next_idx >= len(AVAILABLE_ROBOTS):
-            next_idx = 0
-        new_robot_name = AVAILABLE_ROBOTS[next_idx]
-        return new_robot_name
-    
-    # on click gate added by Kyle
-    def gateG1toggle_onclick(self):
-        global gateG1name, Vgp
-        gateG1name = self.toggleGateType(gateG1name)
-        for i in range(len(AVAILABLE_GATES)):
-            if AVAILABLE_PRISMS[i]["name"]==gateG1name:
-                Vgp = [AVAILABLE_GATES[i]["Vgp1"], AVAILABLE_GATES[i]["Vgp2"], AVAILABLE_GATES[i]["Vgp3"]]
-                break
-            else:
-                rospy.logerror("Gate name does not exist")
-        self.gatelabel.setText(gateG1name)
-    
-    # on click base added by Kyle
-    def baseB1toggle_onclick(self):
-        global baseB1name, Vrq
-        baseB1name = self.toggleRobotBase(baseB1name)
-        for i in range(len(AVAILABLE_BASE)):
-            if AVAILABLE_BASE[i]["name"]==baseB1name:
-                Vrq = [AVAILABLE_BASE[i]["Vrq1"], AVAILABLE_GATES[i]["Vrq2"], AVAILABLE_GATES[i]["Vrq3"]]
-                break
-            else:
-                rospy.logerror("Base name does not exist")
-        self.baselabel.setText(baseB1name)
+            # Reset found transforms
+            self.Tgl_found = False
+            self.Trg_found = False
 
-    # on click zero added by kyle
-    def zeroZ1toggle_onclick(self):
-        global kyle_2d
-        if not kyle_2d is None:
-            kyle_2d = not kyle_2d
+            # Re-enable buttons
+            for prism_label, button in self.buttons[group_label].items():
+                button.setEnabled(True)
+
+        elif group_label == 'Robot':
+            rospy.loginfo("Resetting Robot")
+            # Cancel in process tracking
+            LS.LeicaStopTracking()
+
+            # Empty gate positions
+            V_leica_prism_robot = [[None]*3 for i in range(3)]
+
+            # Reset transforms
+            self.Transform_robot_gate = None
+            self.Transform_robot_leica = None
+
+            # Reset found transforms
+            self.Trl_found = False
+            self.Trg_found = False
+
+            # Re-enable buttons
+            for prism_label, button in self.buttons[group_label].items():
+                button.setEnabled(True)
+
         else:
-            rospy.logerror("kyle_2d is none")
+            rospy.logerror("Invalid Group Label, Reset Failed")
+            return -1
 
-    def robottoggle_onclick(self):
-        global robot_ns
-        robot_ns = self.toggleRobot(robot_ns)
-        self.robotnslabel.setText(robot_ns)
-
-    def prismG1toggle_onclick(self):
-        self.prismG1name = self.togglePrismType(self.prismG1name)
-        self.prismG1namelabel.setText(self.prismG1name)
-
-    def prismG1_onclick(self):
-        global Vlp, Vgp
-        rospy.loginfo("Calculating Gate Position 1")
-        pos = self.getTFOnClick(self.prismG1,self.prismG1name)
-        if not all([i==0 for i in pos]):
-            Vlp[0] = pos
-
-        delta_z = AVAILABLE_PRISMS[next(i for i in range(len(AVAILABLE_PRISMS)) if AVAILABLE_PRISMS[i]["name"]==self.prismG1name)]["z"]
-        if isinstance(delta_z,list):
-            rospy.logerror("Multiple available prisms of same name.")
-            return pos
-        Vgp[0][2] += delta_z
-
-    def prismG2toggle_onclick(self):
-        self.prismG2name = self.togglePrismType(self.prismG2name)
-        self.prismG2namelabel.setText(self.prismG2name)
-
-    def prismG2_onclick(self):
-        global Vlp, Vgp
-        rospy.loginfo("Calculating Gate Position 2")
-        pos = self.getTFOnClick(self.prismG2,self.prismG2name)
-        if not all([i==0 for i in pos]):
-            Vlp[1] = pos
-
-        delta_z = AVAILABLE_PRISMS[next(i for i in range(len(AVAILABLE_PRISMS)) if AVAILABLE_PRISMS[i]["name"]==self.prismG2name)]["z"]
-        if isinstance(delta_z,list):
-            rospy.logerror("Multiple available prisms of same name.")
-            return pos
-        Vgp[1][2] += delta_z
-
-    def prismG3toggle_onclick(self):
-        self.prismG3name = self.togglePrismType(self.prismG3name)
-        self.prismG3namelabel.setText(self.prismG3name)
-
-    def prismG3_onclick(self):
-        global Vlp, Vgp
-        rospy.loginfo("Calculating Gate Position 3")
-        pos = self.getTFOnClick(self.prismG3,self.prismG3name)
-        if not all([i==0 for i in pos]):
-            Vlp[2] = pos
-
-        delta_z = AVAILABLE_PRISMS[next(i for i in range(len(AVAILABLE_PRISMS)) if AVAILABLE_PRISMS[i]["name"]==self.prismG3name)]["z"]
-        if isinstance(delta_z,list):
-            rospy.logerror("Multiple available prisms of same name.")
-            return pos
-        Vgp[2][2] += delta_z
-
-    def prismR1toggle_onclick(self):
-        self.prismR1name = self.togglePrismType(self.prismR1name)
-        self.prismR1namelabel.setText(self.prismR1name)
-
-    def prismR1_onclick(self):
-        global Vlq, Vrq
-        rospy.loginfo("Calculating Robot Position 1")
-        pos = self.getTFOnClick(self.prismR1,self.prismR1name)
-        if not all([i==0 for i in pos]):
-            Vlq[0] = pos
-
-        delta_z = AVAILABLE_PRISMS[next(i for i in range(len(AVAILABLE_PRISMS)) if AVAILABLE_PRISMS[i]["name"]==self.prismR1name)]["z"]
-        if isinstance(delta_z,list):
-            rospy.logerror("Multiple available prisms of same name.")
-            return pos
-        Vrq[0][2] += delta_z
-
-    def prismR2toggle_onclick(self):
-        self.prismR2name = self.togglePrismType(self.prismR2name)
-        self.prismR2namelabel.setText(self.prismR2name)
-
-    def prismR2_onclick(self):
-        global Vlq, Vrq
-        rospy.loginfo("Calculating Robot Position 2")
-        pos = self.getTFOnClick(self.prismR2,self.prismR2name)
-        if not all([i==0 for i in pos]):
-            Vlq[1] = pos
-
-        delta_z = AVAILABLE_PRISMS[next(i for i in range(len(AVAILABLE_PRISMS)) if AVAILABLE_PRISMS[i]["name"]==self.prismR2name)]["z"]
-        if isinstance(delta_z,list):
-            rospy.logerror("Multiple available prisms of same name.")
-            return pos
-        Vrq[1][2] += delta_z
-
-    def prismR3toggle_onclick(self):
-        self.prismR3name = self.togglePrismType(self.prismR3name)
-        self.prismR3namelabel.setText(self.prismR3name)
-
-    def prismR3_onclick(self):
-        global Vlq, Vrq
-        rospy.loginfo("Calculating Robot Position 3")
-        pos = self.getTFOnClick(self.prismR3,self.prismR3name)
-        if not all([i==0 for i in pos]):
-            Vlq[2] = pos
-
-        delta_z = AVAILABLE_PRISMS[next(i for i in range(len(AVAILABLE_PRISMS)) if AVAILABLE_PRISMS[i]["name"]==self.prismR3name)]["z"]
-        if isinstance(delta_z,list):
-            rospy.logerror("Multiple available prisms of same name.")
-            return pos
-        Vrq[2][2] += delta_z
-
-    def btnResetGate_onclick(self):
-        self.need_to_reset_gate = True
-
-    def btnResetRobot_onclick(self):
-        self.need_to_reset_robot = True
-
-    def resetGate(self):
-        global Vlp
-        rospy.loginfo("Resetting Gate")
-
-        self.LeicaStopTracking()
-
-        Vlp = [[None]*3 for i in range(3)]
-        self.Trg = None
-
-        self.Tgl_found = False
-        self.Trg_found = False
-
-        self.prismG1.setEnabled(True)
-        self.prismG2.setEnabled(True)
-        self.prismG3.setEnabled(True)
-
-        self.need_to_reset_gate = False
-
-    
-    def resetRobot(self):
-        global Vlq
-        rospy.loginfo("Resetting Robot")
-
-        self.LeicaStopTracking()
-
-        Vlq = [[None]*3 for i in range(3)]
-        self.Trg = None
-
-        self.Trl_found = False
-        self.Trg_found = False
-
-        self.prismR1.setEnabled(True)
-        self.prismR2.setEnabled(True)
-        self.prismR3.setEnabled(True)
-
-        self.need_to_reset_robot = False
-
-    def btnQuit_onclick(self):
-        self.pub_thread.join()
-        self.parent().close()
-
-
-    def sendTF(self): 
-        global child_frame_id, parent_frame_id, robot_ns
-
-        if not self.Trg_found:
-            rospy.logwarn("Can't send TF. Tf not found yet.")
-            return
-        if not self.Trg.shape==(4,4):
-            rospy.logwarn("Can't send TF. Tf is wrong size.")
-            return
-
-        # wait_for_svc_timeout = 5.0
-        svc_name = "/"+robot_ns+"/"+"set_world_tf"
-        rospy.loginfo("Sending tf to %s",svc_name)
-       
-        # rospy.loginfo("Waiting for SetTF service.")
-        # if rospy.wait_for_service(svc_name,timeout=wait_for_svc_timeout):
-        set_tf_svc = rospy.ServiceProxy(svc_name, SetTF)
-        set_tf_resp = SetTFResponse()
-
-        try:
-            # rospy.loginfo("Setting Robot->Gate:\n%s",T.__str__())
-
-            tf_msg = TransformStamped()
-            tf_msg.header.stamp = rospy.Time.now()
-            tf_msg.header.frame_id = parent_frame_id
-            tf_msg.child_frame_id = child_frame_id
-            tf_msg.transform.translation.x = tf.transformations.translation_from_matrix(self.Trg)[0]
-            tf_msg.transform.translation.y = tf.transformations.translation_from_matrix(self.Trg)[1]
-            tf_msg.transform.translation.z = tf.transformations.translation_from_matrix(self.Trg)[2]
-            tf_msg.transform.rotation.x = tf.transformations.quaternion_from_matrix(self.Trg)[0]
-            tf_msg.transform.rotation.y = tf.transformations.quaternion_from_matrix(self.Trg)[1]
-            tf_msg.transform.rotation.z = tf.transformations.quaternion_from_matrix(self.Trg)[2]
-            tf_msg.transform.rotation.w = tf.transformations.quaternion_from_matrix(self.Trg)[3]
-
-            set_tf_req = SetTFRequest()
-            set_tf_req.transform = tf_msg
-            set_tf_resp = set_tf_svc(set_tf_req)
-
-            if set_tf_resp:
-                rospy.loginfo("TF sent.")
+    def Solve_onclick(self,group_label):
+        global V_gate_prism, V_leica_prism_gate, V_leica_prism_robot, V_robot_prism
+        
+        if group_label == 'Gate':
+            rospy.loginfo("Calculating Gate->Leica")
+            # Check that all prisms have been found
+            if not any(None in pt for pt in V_leica_prism_gate):
+                # Solve from darpa frame to leica frame
+                self.Transform_gate_leica = tf_calc.solveForT(V_gate_prism,V_leica_prism_gate)
+                rospy.loginfo("Gate->Leica:\n%s, %s",\
+                    tf.transformations.translation_from_matrix(self.Transform_gate_leica).__str__(),\
+                    [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(self.Transform_gate_leica, 'sxyz')].__str__())
+                # Set transform as found
+                self.Tgl_found = True
             else:
-                rospy.logwarn("Service call failed.")
-
-        except rospy.ServiceException as e:
-            rospy.logwarn("Service call failed: %s",e)
-            return
-
-        # else:
-        #     rospy.logwarn("Failed to send TF after "+wait_for_svc_timeout.__str__()+" s.")
-        #     return
-        return
+                rospy.logwarn("Three prisms needed")
+        
+        elif group_label == 'Robot':
+            rospy.loginfo("Calculaing Robot->Leica")
+            if not any(None in pt for pt in V_leica_prism_robot):
+                # Solve from robot frame to leica frame
+                self.Transform_robot_leica = tf_calc.solveForT(V_robot_prism,V_leica_prism_robot)
+                rospy.loginfo("Robot->Leica:\n%s, %s",\
+                    tf.transformations.translation_from_matrix(self.Transform_robot_leica).__str__(),\
+                    [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(self.Transform_robot_leica, 'sxyz')].__str__())
+                # Set transform as found
+                self.Trl_found = True
+            else:
+                rospy.logwarn("Three prisms needed")
+        
+        else:
+           rospy.logerror("Invalid Group Label, Solve Failed")
+           return -1 
+    
+    ################################################################################
+    # End of PrismMonitorWidget Class
+    ################################################################################
 
 def main():
-
+    # Initialize rosnode
     rospy.init_node('prism_monitor_node')
+    # Initiazize application
     app = QApplication(sys.argv)
+    # Define the main widget
     mainWidget = PrismMonitorWidget(app)
+    # Create a window for the main widgit
     mainWindow = QMainWindow()
+    # Give the window a title
     mainWindow.setWindowTitle('Prism Position Tracker')
+    # Set the central widet as the main widget
     mainWindow.setCentralWidget(mainWidget)
+    # Set up a status bar
     mainWindow.setStatusBar(QStatusBar())
+    # Display the main window
     mainWindow.show()
-    app.exec_()
+    # Exit on window close
+    sys.exit(app.exec_())
     
 
 if __name__ == '__main__':
+#    main()
     try:
-	main()
+    	main()
     except rospy.ROSInterruptException:
 	pass
-
-
-
-
-
-
-
-
-
-
