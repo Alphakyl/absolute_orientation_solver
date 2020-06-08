@@ -1,4 +1,4 @@
 <launch>
     <!-- <include file="$(find marble_common)/launch/launch_multimaster.launch" /> -->
-    <node pkg="ltf" type="new_prismUI.py" name="Ui_Monitor" output="screen" />
+    <node pkg="ltf" type="prismUI.py" name="Ui_Monitor" output="screen" />
 </launch>

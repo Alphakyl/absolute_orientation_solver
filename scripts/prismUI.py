@@ -12,26 +12,6 @@ import numpy as np
 from geometry_msgs.msg import *
 from leica_ros_msgs.srv import *
 
-
-#import math
-#import tf2_ros
-#from numpy import linalg as LA
-#from numpy.linalg import inv
-#from scipy.optimize import minimize
-#from scipy.spatial.transform import Rotation
-#import itertools as it
-#import time
-# from QLabeledValue import *
-#from leica_ros.msg import *
-#from std_msgs.msg import *
-#from std_srvs.srv import *
-
-#import message_filters
-
-#from leica_ros.srv import *
-#from marble_origin_detection_msgs.srv import *
-#from marble_origin_detection_msgs.srv import SetTF, SetTFRequest, SetTFResponse
-
 #import threading
 
 # GLOBAL VARIABLES
