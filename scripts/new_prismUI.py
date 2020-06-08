@@ -143,8 +143,8 @@ class PrismMonitorWidget(QMainWindow):
         # Transforms found set to false
         self.Trg_found = False
         self.Trl_found = False
-        self.Trg_found = False
-
+        self.Tgl_found = False
+        
         # Store empty transforms
         self.Transform_robot_gate = None
         self.Transform_gate_leica = None
