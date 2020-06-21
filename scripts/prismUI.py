@@ -48,7 +48,7 @@ AVAILABLE_PRISMS = {
         }
 }
 
-AVAILABLE_ROBOTS = ["H01","H02","H03","T01","T02","T03","L01","A01","A02","A03","A99"]
+#AVAILABLE_ROBOTS = ["H01","H02","H03","T01","T02","T03","L01","A01","A02","A03","A99"]
 
 # List of base dictionaries
 AVAILABLE_BASE = {
@@ -130,10 +130,12 @@ class PrismMonitorWidget(QMainWindow):
         self.Transform_robot_leica = None
 
         # Create publisher dictionary to store a publisher per robot
-        self.pub = {}
-        for robot in AVAILABLE_ROBOTS:
-            robot_topic = '/' + robot + '/set_world_tf'
-            self.pub[robot] = rospy.Publisher(robot_topic, TransformStamped, queue_size=10)
+        robot_topic = 'leica/robot_to_origin_transform'
+        self.pub = rospy.Publisher(robot_topic, TransformStamped, queue_size=10)
+        #self.pub = {}
+        #for robot in AVAILABLE_ROBOTS:
+        #    robot_topic = '/' + robot + '/set_world_tf'
+        #    self.pub[robot] = rospy.Publisher(robot_topic, TransformStamped, queue_size=10)
 
         # Create a holder dictionary for buttons and combo boxes
         self.buttons = {}
@@ -267,10 +269,10 @@ class PrismMonitorWidget(QMainWindow):
         robotGroupLayout.addWidget(self.calculate_full_button)
 
         # Creating a combo box with a list of potential robots
-        self.robotOption = QComboBox()
-        self.robotOption.addItems(AVAILABLE_ROBOTS)
-        self.robotOption.currentIndexChanged.connect(self._current_robot)
-        robotGroupLayout.addWidget(self.robotOption)
+        #self.robotOption = QComboBox()
+        #self.robotOption.addItems(AVAILABLE_ROBOTS)
+        #self.robotOption.currentIndexChanged.connect(self._current_robot)
+        #robotGroupLayout.addWidget(self.robotOption)
 
         # Creating a sendTF button
         self.sendtfbtn = QPushButton('Send TF')
@@ -287,6 +289,7 @@ class PrismMonitorWidget(QMainWindow):
     def _sendTF(self):
         global child_frame_id, parent_frame_id, robot_ns, num_publishes
 
+        r = rospy.Rate(10)
         # Check if the tranform exists and is the correct size
         if self.Trg_found == False:
             rospy.logwarn("Can't send TF. Tf not found yet.")
@@ -310,7 +313,8 @@ class PrismMonitorWidget(QMainWindow):
 
         # Publish the message num_publishes times to the robot_ns publisher
         for i in range(num_publishes):
-            self.pub[robot_ns].publish(tf_msg)
+            self.pub.publish(tf_msg)
+            r.sleep()
         
     def _calcTF(self):
         global project_transform_from_3d_to_2d
