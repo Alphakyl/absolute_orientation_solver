@@ -114,15 +114,17 @@ class Test_Prism_Monitor():
         self.Transform_robot_leica = None
         
         # Establish prism adds
-        self.find_location('Gate','Left', prism2)
+        
         self.find_location('Gate','Top', prism1)
+        self.find_location('Gate','Left', prism2)
         self.find_location('Gate','Right', prism3)
 
         self.Solve_onclick('Gate')
 
+        self.find_location('Robot','Right', prismr2)
         self.find_location('Robot','Left', prismr1)
         self.find_location('Robot','Top', prismr3)
-        self.find_location('Robot','Right', prismr2)
+
 
         self.Solve_onclick('Robot')
 
