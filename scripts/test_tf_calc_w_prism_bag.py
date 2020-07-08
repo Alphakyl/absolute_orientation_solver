@@ -94,7 +94,16 @@ class Test_Prism_Monitor():
         prismr1 = [3.0797, 0.0631, -0.5261] #left
         prismr2 = [2.9774, 0.1632, -0.5267] #right 
         prismr3 = [3.0849, 0.2704, -0.5257] #top
-
+        # Transforms found set to false
+        self.Trg_found = False
+        self.Trl_found = False
+        self.Tgl_found = False
+        
+        # Store empty transforms
+        self.Transform_robot_gate = None
+        self.Transform_gate_leica = None
+        self.Transform_robot_leica = None
+        
 
 
     def find_location(self, group_label, prism_label, pos):
