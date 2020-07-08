@@ -394,6 +394,7 @@ class PrismMonitorWidget(QMainWindow):
                 button.clicked.connect(partial(self.find_location,group_label,prism_label))
     
     def find_location(self,group_label,prism_label):
+        print group_label, prism_label
         global V_leica_prism_gate, V_leica_prism_robot
 
         # For the correct group label and prism label find the TF
