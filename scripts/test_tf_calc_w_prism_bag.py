@@ -1,6 +1,15 @@
 #!usr/bin/python2
 import numpy as np
 import tf_calc
+import tf
+
+robot_ns = "H01"
+child_frame_id = "world"
+# child_frame_id = "gate_leica"
+parent_frame_id = "body_aligned_imu_link"
+current_gate = "Small"
+current_base = "UGV"
+project_transform_from_3d_to_2d = False
 
 # Dictionaries the hold informations on various prisms and bases
 AVAILABLE_PRISMS = {
@@ -104,43 +113,64 @@ class Test_Prism_Monitor():
         self.Transform_gate_leica = None
         self.Transform_robot_leica = None
         
+        # Establish prism adds
+        self.find_location('Gate','Left', prism2)
+        self.find_location('Gate','Top', prism1)
+        self.find_location('Gate','Right', prism3)
 
+        self.Solve_onclick('Gate')
+
+        self.find_location('Robot','Left', prismr1)
+        self.find_location('Robot','Top', prismr3)
+        self.find_location('Robot','Right', prismr2)
+
+        self.Solve_onclick('Robot')
+
+        self._calcTF()
 
     def find_location(self, group_label, prism_label, pos):
         global V_leica_prism_gate, V_leica_prism_robot
         print group_label, prism_label
-            pos = self.getTFOnClick(self.buttons[group_label][prism_label],self.prismOptions[group_label][prism_label].currentText())
-            
-            # Apply pose to the proper group, gate or robot
-            if group_label == 'Gate':
-                # Check that the returned pose isn't the default pose
-                # print pos
-                if not all([i==0 for i in pos]):
-                    V_leica_prism_gate[self.point_from_label(prism_label)] = pos
+        
+        # Apply pose to the proper group, gate or robot
+        if group_label == 'Gate':
+            # Check that the returned pose isn't the default pose
+            # print pos
+            if not all([i==0 for i in pos]):
+                V_leica_prism_gate[self.point_from_label(prism_label)] = pos
 
-                # Apply an offset based on the height of prisms
-                delta_z = AVAILABLE_PRISMS[CURRENT_PRISM[group_label][prism_label]]["z"]
-                if isinstance(delta_z, list):
-                    print "Multiple available prisms of same name."
-                    return pos
-                V_gate_prism[self.point_from_label(prism_label)][2] += delta_z
-
-            elif group_label == 'Robot':
-                # Check that the returned pose isn't the default pose
-                if not all([i==0 for i in pos]):
-                    V_leica_prism_robot[self.point_from_label(prism_label)] = pos
-            
-                # Apply an offset based on the height of prisms
-                delta_z = AVAILABLE_PRISMS[CURRENT_PRISM[group_label][prism_label]]["z"]
-                if isinstance(delta_z, list):
-                    print "Multiple available prisms of same name."
-                    return pos
-                V_robot_prism[self.point_from_label(prism_label)][2] += delta_z
-            
-            else:
-                print "Invalid Group Label"
+            # Apply an offset based on the height of prisms
+            delta_z = AVAILABLE_PRISMS[CURRENT_PRISM[group_label][prism_label]]["z"]
+            if isinstance(delta_z, list):
+                print "Multiple available prisms of same name."
                 return pos
+            V_gate_prism[self.point_from_label(prism_label)][2] += delta_z
 
+        elif group_label == 'Robot':
+            # Check that the returned pose isn't the default pose
+            if not all([i==0 for i in pos]):
+                V_leica_prism_robot[self.point_from_label(prism_label)] = pos
+        
+            # Apply an offset based on the height of prisms
+            delta_z = AVAILABLE_PRISMS[CURRENT_PRISM[group_label][prism_label]]["z"]
+            if isinstance(delta_z, list):
+                print "Multiple available prisms of same name."
+                return pos
+            V_robot_prism[self.point_from_label(prism_label)][2] += delta_z
+        
+        else:
+            print "Invalid Group Label"
+            return pos
+
+    def point_from_label(self,label):
+        # Creates a simple switch statement dictionary
+        point = {
+            'Left':0,
+            'Top':1,
+            'Right':2,
+            }
+        return point.get(label)
+    
     def Solve_onclick(self,group_label):
             global V_gate_prism, V_leica_prism_gate, V_leica_prism_robot, V_robot_prism
             
@@ -175,31 +205,38 @@ class Test_Prism_Monitor():
                 print "Invalid Group Label, Solve Failed"
             return -1 
         
-        def _calcTF(self):
-            global project_transform_from_3d_to_2d
+    def _calcTF(self):
+        global project_transform_from_3d_to_2d
 
-            # Check if gate and robot to leica transforms are available
-            if not self.Tgl_found:
-                print "Missing Gate->Leica Transform"
-                return
-            if not self.Trl_found:
-                print "Missing Robot->Leica Transform"
-                return
+        # Check if gate and robot to leica transforms are available
+        if not self.Tgl_found:
+            print "Missing Gate->Leica Transform"
+            return
+        if not self.Trl_found:
+            print "Missing Robot->Leica Transform"
+            return
 
-            # Trg = Trl*(Tgl)^(-1)
-            self.Transform_robot_gate = tf.transformations.concatenate_matrices(self.Transform_robot_leica,tf.transformations.inverse_matrix(self.Transform_gate_leica))
+        # Trg = Trl*(Tgl)^(-1)
+        self.Transform_robot_gate = tf.transformations.concatenate_matrices(self.Transform_robot_leica,tf.transformations.inverse_matrix(self.Transform_gate_leica))
 
-            # If the transform has not been found previously set the transform
-            if not self.Trg_found:
-                print "Robot->Gate:\n"
-                print tf.transformations.translation_from_matrix(self.Transform_robot_gate).__str__()
-                print [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(self.Transform_robot_gate, 'sxyz')].__str__()
-            # Legacy in case we need to project to 2d in the future
-            if project_transform_from_3d_to_2d:
-                print "Projecting 3d transfrom to x-y plane..."
-                yaw, pitch, roll = tf.transformations.euler_from_matrix(self.Transform_robot_gate[0:3,0:3], axes="szyx")
-                R = tf.transformations.euler_matrix(yaw, 0.0, 0.0, axes="szyx")
-                self.Transform_robot_gate[0:3, 0:3] = R[0:3, 0:3]
-                print "New (yaw, pitch, roll) = (%0.4f, %0.4f, %0.4f)" % (yaw*180.0/np.pi, 0.0, 0.0))
-            # Mark TF as found
-            self.Trg_found = True
+        # If the transform has not been found previously set the transform
+        if not self.Trg_found:
+            print "Robot->Gate:\n"
+            print tf.transformations.translation_from_matrix(self.Transform_robot_gate).__str__()
+            print [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(self.Transform_robot_gate, 'sxyz')].__str__()
+        # Legacy in case we need to project to 2d in the future
+        if project_transform_from_3d_to_2d:
+            print "Projecting 3d transfrom to x-y plane..."
+            yaw, pitch, roll = tf.transformations.euler_from_matrix(self.Transform_robot_gate[0:3,0:3], axes="szyx")
+            R = tf.transformations.euler_matrix(yaw, 0.0, 0.0, axes="szyx")
+            self.Transform_robot_gate[0:3, 0:3] = R[0:3, 0:3]
+            # print "New (yaw, pitch, roll) = (%0.4f, %0.4f, %0.4f)" % (yaw*180.0/np.pi, 0.0, 0.0))
+        # Mark TF as found
+        self.Trg_found = True
+
+
+def main():
+    test = Test_Prism_Monitor()
+
+if __name__ == '__main__':
+    main()
