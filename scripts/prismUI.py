@@ -20,7 +20,7 @@ child_frame_id = "world"
 # child_frame_id = "gate_leica"
 parent_frame_id = "body_aligned_imu_link"
 current_gate = "Small"
-current_base = "UGV"
+current_base = "oldUGV"
 project_transform_from_3d_to_2d = False
 num_publishes = 10
 
@@ -53,9 +53,9 @@ AVAILABLE_PRISMS = {
 # List of base dictionaries
 AVAILABLE_BASE = {
     "UGV": {
-        "Vrq1"      : [-0.0768284,0.0713284,0.0209],
-        "Vrq2"      : [0.0768284,-0.0713284,0.0209],
-        "Vrq3"      : [-0.0768284,-0.0713284,0.0209],
+        "Vrq1"      : [-0.0713284, 0.0768284, 0.0209],
+        "Vrq2"      : [0.0713284, -0.0768284, 0.0209],
+        "Vrq3"      : [-0.0713284, -0.0768284, 0.0209],
     },
     "UAV": {
         "Vrq1"      : [-0.25, -.1, -.205],
@@ -81,10 +81,15 @@ AVAILABLE_GATES = {
         "Vgp2"      : [0.4265, 0.002, 2.688],
         "Vgp3"      : [0.441, -1.3405, 0.8425],
     },
-    "Small": {
+    "oldSmall": {
         "Vgp1"      : [-0.045, 0.100025, 0], # left
         "Vgp2"      : [0.045, -0.100025, 0], # top
         "Vgp3"      : [-0.045, -0.100025, 0], # right
+    },
+    "Small": {
+        "Vgp1"      : [-0.0713284, 0.0768284, 0.0209],
+        "Vgp2"      : [0.0713284, -0.0768284, 0.0209],
+        "Vgp3"      : [-0.0713284, -0.0768284, 0.0209],
     }
 }
 
