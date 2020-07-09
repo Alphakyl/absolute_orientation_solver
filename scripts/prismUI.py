@@ -135,7 +135,7 @@ class PrismMonitorWidget(QMainWindow):
         self.Transform_robot_leica = None
 
         # Create publisher dictionary to store a publisher per robot
-        robot_topic = 'leica/robot_to_origin_transform'
+        robot_topic = '/leica/robot_to_origin_transform'
         self.pub = rospy.Publisher(robot_topic, TransformStamped, queue_size=10)
         #self.pub = {}
         #for robot in AVAILABLE_ROBOTS:
@@ -318,6 +318,7 @@ class PrismMonitorWidget(QMainWindow):
 
         # Publish the message num_publishes times to the robot_ns publisher
         for i in range(num_publishes):
+            print "here"
             self.pub.publish(tf_msg)
             r.sleep()
         
