@@ -1,12 +1,11 @@
 import rospy
-from leica_ros.msg import *
+from leica_ros_msgs.msg import *
 from std_msgs.msg import *
 from std_srvs.srv import *
 from geometry_msgs.msg import *
 
 
-from leica_ros.srv import *
-from marble_origin_detection_msgs.srv import *
+from leica_ros_msgs.srv import *
 
 def LeicaSetPrismType(prism_name):
     set_prism_type_svc = rospy.ServiceProxy('leica_node/set_prism_type', SetPrismType)

@@ -11,23 +11,33 @@ See Also: Kabsch Algorithm https://en.wikipedia.org/wiki/Kabsch_algorithm#cite_n
 
 def horns_method(v1,v2):
     # Define pt arrays [[x],[y],...,[z]]
+    print "v1 = " + v1.__str__()
+    print "v2 = " + v2.__str__()
     v1 = np.array(v1).T
     v2 = np.array(v2).T
-    
+    print "v1.T = " + v1.__str__()
+    print "v2.T = " + v2.__str__()
+
+
     # Calculate centroids
     c1 = np.sum(v1,1)/np.size(v1,1)
     c1 = c1[:,np.newaxis]
+    print "c1 = " + c1.__str__()
     c2 = np.sum(v2,1)/np.size(v2,1)
     c2 = c2[:,np.newaxis]
+    print "c2 = " + c2.__str__()
 
     # Update coordinates by removing their centroids
     v1_prime = v1-c1
+    print "v1_prime = " + v1_prime.__str__()
     v2_prime = v2-c2
+    print "v2_prime = " + v2_prime.__str__()
 
     # Determine the scale factor = sqrt(sum ||v2,i||^2/sum||v1,i||^2)
     S1 = np.sum([np.dot(v1_prime[:,col],v1_prime[:,col]) for col in range(np.size(v1,1))])
     S2 = np.sum([np.dot(v2_prime[:,col],v2_prime[:,col]) for col in range(np.size(v2,1))])
     s = np.sqrt(S2/S1)
+    print "scale = " + s.__str__()
 
     # Determine M = [[S_xx S_xy S_xz], [Syx Syy Syz], [Szx Szy Szz]]
     M = np.dot(v1_prime,v2_prime.T)
@@ -76,6 +86,7 @@ def solveForT(v1,v2):
     # Minimize using horns method
     error, solution = horns_method(v1,v2)
     print "Calculated Error:", error
+    print "Solution: ", solution
     return solution
 
 # def calcTF():   #Robot_origin->World Publisher
