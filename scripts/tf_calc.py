@@ -11,9 +11,14 @@ See Also: Kabsch Algorithm https://en.wikipedia.org/wiki/Kabsch_algorithm#cite_n
 
 def horns_method(v1,v2):
     # Define pt arrays [[x],[y],...,[z]]
+    print "v1 = " + v1.__str__()
+    print "v2 = " + v2.__str__()
     v1 = np.array(v1).T
     v2 = np.array(v2).T
-    
+    print "v1.T = " + v1.__str__()
+    print "v2.T = " + v2.__str__()
+
+
     # Calculate centroids
     c1 = np.sum(v1,1)/np.size(v1,1)
     c1 = c1[:,np.newaxis]
@@ -81,6 +86,7 @@ def solveForT(v1,v2):
     # Minimize using horns method
     error, solution = horns_method(v1,v2)
     print "Calculated Error:", error
+    print "Solution: ", solution
     return solution
 
 # def calcTF():   #Robot_origin->World Publisher
