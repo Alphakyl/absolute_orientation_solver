@@ -41,6 +41,7 @@ def horns_method(v1,v2):
 
     # Determine M = [[S_xx S_xy S_xz], [Syx Syy Syz], [Szx Szy Szz]]
     M = np.dot(v1_prime,v2_prime.T)
+    print "M = " + M.__str__()
     S_xx = M[0,0]
     S_xy = M[0,1]
     S_xz = M[0,2]
@@ -61,6 +62,7 @@ def horns_method(v1,v2):
     eig_val,eig_vec = np.linalg.eig(N)
     # rot = [w, x, y, z]
     rot = eig_vec[:,np.argmax(eig_val)]
+    print 'rotation = ' + rot.__str__()
     quat_mat = tf.transformations.quaternion_matrix([rot[1], rot[2], rot[3], rot[0]])
     
     # Solve for translation based on difference of transformed centroids
