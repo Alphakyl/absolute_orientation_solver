@@ -37,6 +37,8 @@ def horns_method(v1,v2):
     S1 = np.sum([np.dot(v1_prime[:,col],v1_prime[:,col]) for col in range(np.size(v1,1))])
     S2 = np.sum([np.dot(v2_prime[:,col],v2_prime[:,col]) for col in range(np.size(v2,1))])
     s = np.sqrt(S2/S1)
+    print "S1 = SR = " + S1.__str__()
+    print "S2 = SL = " + S2.__str__()
     print "scale = " + s.__str__()
 
     # Determine M = [[S_xx S_xy S_xz], [Syx Syy Syz], [Szx Szy Szz]]

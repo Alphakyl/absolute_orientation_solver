@@ -79,12 +79,12 @@ AVAILABLE_GATES = {
 }
 
 # Empty global variables for storing prism points (Given values and calculated from the Leica)
-# V_gate_prism = [AVAILABLE_GATES[current_gate]['Vgp1'], AVAILABLE_GATES[current_gate]['Vgp2'], AVAILABLE_GATES[current_gate]['Vgp3']]
-# V_robot_prism = [AVAILABLE_BASE[current_base]['Vrq1'], AVAILABLE_BASE[current_base]['Vrq2'], AVAILABLE_BASE[current_base]['Vrq3']]
+V_gate_prism = [AVAILABLE_GATES[current_gate]['Vgp1'], AVAILABLE_GATES[current_gate]['Vgp2'], AVAILABLE_GATES[current_gate]['Vgp3']]
+V_robot_prism = [AVAILABLE_BASE[current_base]['Vrq1'], AVAILABLE_BASE[current_base]['Vrq2'], AVAILABLE_BASE[current_base]['Vrq3']]
 V_leica_prism_gate = [[None]*3 for i in range(3)]
-# V_leica_prism_robot = [[None]*3 for i in range(3)]
+V_leica_prism_robot = [[None]*3 for i in range(3)]
 
-V_gate_prism = [[None]*3 for i in range(3)]
+# V_gate_prism = [[None]*3 for i in range(3)]
 
 CURRENT_PRISM = {
     "Gate": {
@@ -129,12 +129,12 @@ class Test_Prism_Monitor():
         # p2 = [1.3102, 0.8254, -1.1636]
         # p3 = [1.185, 0.7579, -1.1628]
 
-        ## Robot prism 3m
+        ## Robot prism 5m
         pr1 = [4.7936, 0.7133, -1.1588]
         pr2 = [4.9039, 0.5273, -1.1567]
         pr3 = [4.7644, 0.5646, -1.1601]
 
-        ## Gate prism 3m
+        ## Gate prism 5m
         p1 = [4.834, 0.9204, -1.1524]
         p2 = [4.945, 0.7433, -1.1495]
         p3 = [4.8056, 0.7702, -1.1546]
@@ -155,9 +155,9 @@ class Test_Prism_Monitor():
         # self.find_location('Gate','Left', prism2)
         # self.find_location('Gate','Right', prism3)
 
-        V_gate_prism[0] = pr1
-        V_gate_prism[1] = pr2 
-        V_gate_prism[2] = pr3
+        # V_gate_prism[0] = pr1
+        # V_gate_prism[1] = pr2 
+        # V_gate_prism[2] = pr3
 
         self.find_location('Gate', 'Left', p1)
         self.find_location('Gate', 'Top', p2)
@@ -168,13 +168,13 @@ class Test_Prism_Monitor():
         # self.find_location('Robot','Right', prismr2)
         # self.find_location('Robot','Left', prismr1)
         # self.find_location('Robot','Top', prismr3)
-        # self.find_location('Robot', 'Left', pr1)
-        # self.find_location('Robot', 'Top', pr2)
-        # self.find_location('Robot', 'Right', pr3)
+        self.find_location('Robot', 'Left', pr1)
+        self.find_location('Robot', 'Top', pr2)
+        self.find_location('Robot', 'Right', pr3)
 
-        # self.Solve_onclick('Robot')
+        self.Solve_onclick('Robot')
 
-        # self._calcTF()
+        self._calcTF()
 
     def find_location(self, group_label, prism_label, pos):
         global V_leica_prism_gate, V_leica_prism_robot
@@ -188,11 +188,12 @@ class Test_Prism_Monitor():
                 V_leica_prism_gate[self.point_from_label(prism_label)] = pos
 
             # Apply an offset based on the height of prisms
-            delta_z = AVAILABLE_PRISMS[CURRENT_PRISM[group_label][prism_label]]["z"]
-            if isinstance(delta_z, list):
-                print "Multiple available prisms of same name."
-                return pos
-            V_gate_prism[self.point_from_label(prism_label)][2] += delta_z
+            ## TODO: Potential bug, this never gets reset, make part of prism toggle?
+            # delta_z = AVAILABLE_PRISMS[CURRENT_PRISM[group_label][prism_label]]["z"]
+            # if isinstance(delta_z, list):
+            #     print "Multiple available prisms of same name."
+            #     return pos
+            # V_gate_prism[self.point_from_label(prism_label)][2] += delta_z
 
         elif group_label == 'Robot':
             # Check that the returned pose isn't the default pose
@@ -200,11 +201,12 @@ class Test_Prism_Monitor():
                 V_leica_prism_robot[self.point_from_label(prism_label)] = pos
         
             # Apply an offset based on the height of prisms
-            delta_z = AVAILABLE_PRISMS[CURRENT_PRISM[group_label][prism_label]]["z"]
-            if isinstance(delta_z, list):
-                print "Multiple available prisms of same name."
-                return pos
-            V_robot_prism[self.point_from_label(prism_label)][2] += delta_z
+            ## TODO: Potential bug, this never gets reset, make part of prism toggle?
+            # delta_z = AVAILABLE_PRISMS[CURRENT_PRISM[group_label][prism_label]]["z"]
+            # if isinstance(delta_z, list):
+            #     print "Multiple available prisms of same name."
+            #     return pos
+            # V_robot_prism[self.point_from_label(prism_label)][2] += delta_z
         
         else:
             print "Invalid Group Label"

@@ -27,12 +27,14 @@ Vgp3 = [-0.0713284, -0.0768284, 0.0209];
 
 b = [Vgp1', Vgp2', Vgp3'];
 %% math
-dist = sqrt((pr1(1)-p1(1))^2+(pr1(2)-p1(2))^2+(pr1(3)-p1(3))^2);
-dist = sqrt((pr2(1)-p2(1))^2+(pr2(2)-p2(2))^2+(pr2(3)-p2(3))^2);
-dist = sqrt((pr3(1)-p3(1))^2+(pr3(2)-p3(2))^2+(pr3(3)-p3(3))^2);
+disp('Section 5m Distance Plate Prisms')
+disp('Distance of individual points')
+dist = sqrt((pr1(1)-p1(1))^2+(pr1(2)-p1(2))^2+(pr1(3)-p1(3))^2)
+dist = sqrt((pr2(1)-p2(1))^2+(pr2(2)-p2(2))^2+(pr2(3)-p2(3))^2)
+dist = sqrt((pr3(1)-p3(1))^2+(pr3(2)-p3(2))^2+(pr3(3)-p3(3))^2)
 
-
-tf_calc(p,pr)
+disp('Direct Offset and Rotation')
+tf_mat = tf_calc(p,pr);
 
 %% Robot prism 1m
 pr1 = [1.2127, 0.7072, -1.1661];
@@ -46,4 +48,11 @@ p2 = [1.3102, 0.8254, -1.1636];
 p3 = [1.185, 0.7579, -1.1628];
 p = [p1', p2', p3'];
 
-tf_calc(p,pr)
+disp('Section 1m Distance Plate Prisms')
+disp('Distance of individual points')
+dist = sqrt((pr1(1)-p1(1))^2+(pr1(2)-p1(2))^2+(pr1(3)-p1(3))^2)
+dist = sqrt((pr2(1)-p2(1))^2+(pr2(2)-p2(2))^2+(pr2(3)-p2(3))^2)
+dist = sqrt((pr3(1)-p3(1))^2+(pr3(2)-p3(2))^2+(pr3(3)-p3(3))^2)
+
+disp('Direct Offset and Rotation')
+tf_mat = tf_calc(p,pr);
