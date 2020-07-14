@@ -79,10 +79,12 @@ AVAILABLE_GATES = {
 }
 
 # Empty global variables for storing prism points (Given values and calculated from the Leica)
-V_gate_prism = [AVAILABLE_GATES[current_gate]['Vgp1'], AVAILABLE_GATES[current_gate]['Vgp2'], AVAILABLE_GATES[current_gate]['Vgp3']]
-V_robot_prism = [AVAILABLE_BASE[current_base]['Vrq1'], AVAILABLE_BASE[current_base]['Vrq2'], AVAILABLE_BASE[current_base]['Vrq3']]
+# V_gate_prism = [AVAILABLE_GATES[current_gate]['Vgp1'], AVAILABLE_GATES[current_gate]['Vgp2'], AVAILABLE_GATES[current_gate]['Vgp3']]
+# V_robot_prism = [AVAILABLE_BASE[current_base]['Vrq1'], AVAILABLE_BASE[current_base]['Vrq2'], AVAILABLE_BASE[current_base]['Vrq3']]
 V_leica_prism_gate = [[None]*3 for i in range(3)]
-V_leica_prism_robot = [[None]*3 for i in range(3)]
+# V_leica_prism_robot = [[None]*3 for i in range(3)]
+
+V_gate_prism = [[None]*3 for i in range(3)]
 
 CURRENT_PRISM = {
     "Gate": {
@@ -91,9 +93,9 @@ CURRENT_PRISM = {
         "Top": "micro_360",
     },
     "Robot": {
-        "Left" : "micro_360",
-        "Right": "micro_360",
-        "Top": "micro_360",
+        "Left" : "mini_360",
+        "Right": "mini_360",
+        "Top": "mini_360",
     }
 }
 
@@ -101,22 +103,43 @@ CURRENT_PRISM = {
 
 class Test_Prism_Monitor():
     def __init__(self):
-        #prism1 = [3.7571, 2.0081, -1.1781] #top
-        #prism2 = [3.8469, 1.8526, -1.1732] #left
-        #prism3 = [3.7586, 1.8527, -1.175] #right
+        # prism1 = [3.7571, 2.0081, -1.1781] #top
+        # prism2 = [3.8469, 1.8526, -1.1732] #left
+        # prism3 = [3.7586, 1.8527, -1.175] #right
 
-        #prismr1 = [3.0797, 0.0631, -0.5261] #left
-        #prismr2 = [2.9774, 0.1632, -0.5267] #right 
-        #prismr3 = [3.0849, 0.2704, -0.5257] #top
+        # prismr1 = [3.0797, 0.0631, -0.5261] #left
+        # prismr2 = [2.9774, 0.1632, -0.5267] #right 
+        # prismr3 = [3.0849, 0.2704, -0.5257] #top
         # Transforms found set to false
-        prismr1 = [2.1739, -0.2881, -1.1732]
-        prismr3 = [2.2487, -0.4835, -1.1709]
-        prismr2 = [2.1169, -0.4277, -1.1737]
+        # prismr1 = [2.1739, -0.2881, -1.1732]
+        # prismr3 = [2.2487, -0.4835, -1.1709]
+        # prismr2 = [2.1169, -0.4277, -1.1737]
 
-        prism2 = [2.097, -0.4801, -1.1683]
-        prism1 = [2.1725, -0.6755, -1.1672]
-        prism3 = [2.039, -0.6266, -1.1702]
+        # prism2 = [2.097, -0.4801, -1.1683]
+        # prism1 = [2.1725, -0.6755, -1.1672]
+        # prism3 = [2.039, -0.6266, -1.1702]
         
+        ## Robot prism 1m
+        # pr1 = [1.2127, 0.7072, -1.1661]
+        # pr2 = [1.4105, 0.6411, -1.1642]
+        # pr3 = [1.2854, 0.5736, -1.1632]
+
+        ## Gate prism 1m
+        # p1 = [1.1122, 0.8919, -1.1648]
+        # p2 = [1.3102, 0.8254, -1.1636]
+        # p3 = [1.185, 0.7579, -1.1628]
+
+        ## Robot prism 3m
+        pr1 = [4.7936, 0.7133, -1.1588]
+        pr2 = [4.9039, 0.5273, -1.1567]
+        pr3 = [4.7644, 0.5646, -1.1601]
+
+        ## Gate prism 3m
+        p1 = [4.834, 0.9204, -1.1524]
+        p2 = [4.945, 0.7433, -1.1495]
+        p3 = [4.8056, 0.7702, -1.1546]
+
+
         self.Trg_found = False
         self.Trl_found = False
         self.Tgl_found = False
@@ -128,20 +151,30 @@ class Test_Prism_Monitor():
         
         # Establish prism adds
         
-        self.find_location('Gate','Top', prism1)
-        self.find_location('Gate','Left', prism2)
-        self.find_location('Gate','Right', prism3)
+        # self.find_location('Gate','Top', prism1)
+        # self.find_location('Gate','Left', prism2)
+        # self.find_location('Gate','Right', prism3)
+
+        V_gate_prism[0] = pr1
+        V_gate_prism[1] = pr2 
+        V_gate_prism[2] = pr3
+
+        self.find_location('Gate', 'Left', p1)
+        self.find_location('Gate', 'Top', p2)
+        self.find_location('Gate', 'Right', p3) 
 
         self.Solve_onclick('Gate')
 
-        self.find_location('Robot','Right', prismr2)
-        self.find_location('Robot','Left', prismr1)
-        self.find_location('Robot','Top', prismr3)
+        # self.find_location('Robot','Right', prismr2)
+        # self.find_location('Robot','Left', prismr1)
+        # self.find_location('Robot','Top', prismr3)
+        # self.find_location('Robot', 'Left', pr1)
+        # self.find_location('Robot', 'Top', pr2)
+        # self.find_location('Robot', 'Right', pr3)
 
+        # self.Solve_onclick('Robot')
 
-        self.Solve_onclick('Robot')
-
-        self._calcTF()
+        # self._calcTF()
 
     def find_location(self, group_label, prism_label, pos):
         global V_leica_prism_gate, V_leica_prism_robot
