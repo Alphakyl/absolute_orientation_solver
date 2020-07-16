@@ -339,7 +339,7 @@ class PrismMonitorWidget(QMainWindow):
             return
 
         # Trg = Trl*(Tgl)^(-1)
-        self.Transform_robot_gate = tf.transformations.concatenate_matrices(self.Transform_robot_leica,tf.transformations.inverse_matrix(self.Transform_gate_leica))
+        self.Transform_robot_gate = tf.transformations.concatenate_matrices(tf.transformations.inverse_matrix(self.Transform_robot_leica),self.Transform_gate_leica)
 
         # If the transform has not been found previously set the transform
         if not self.Trg_found:
@@ -407,7 +407,7 @@ class PrismMonitorWidget(QMainWindow):
         rospy.loginfo("Calculating %s %s location", group_label, prism_label)
         print group_label, prism_label
         pos = self.getTFOnClick(self.buttons[group_label][prism_label],self.prismOptions[group_label][prism_label].currentText())
-        
+        print pos
         # Apply pose to the proper group, gate or robot
         if group_label == 'Gate':
             # Check that the returned pose isn't the default pose
