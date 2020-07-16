@@ -43,6 +43,8 @@ zlabel('z (m)')
 axis([-0.15 0.15 -0.15 0.15 -0.15 0.15])
 legend('Left prism set', 'Right prism set')
 
+%dist_one_point = sqrt((vr_prime(2,1)-vl_prime(2,1)).^2+)
+
 % Create M 
 M = vl_prime*vr_prime';
 
