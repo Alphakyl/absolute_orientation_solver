@@ -482,7 +482,7 @@ class PrismMonitorWidget(QMainWindow):
         return pos
 
     def Reset_onclick(self, group_label):
-        global V_gate_prism, V_leica_prism_gate, V_leica_prism_robot, V_robot_prism
+        global V_gate_prism, V_leica_prism_gate, V_leica_prism_robot, V_robot_prism, current_gate, current_base, AVAILABLE_BASE, AVAILABLE_GATES
         
         if group_label == 'Gate':
             rospy.loginfo("Resetting Gate")
@@ -491,6 +491,8 @@ class PrismMonitorWidget(QMainWindow):
 
             # Empty gate positions
             V_leica_prism_gate = [[None]*3 for i in range(3)]
+            # Reset offsets to gate
+            V_gate_prism = [AVAILABLE_GATES[current_gate]['Vgp1'], AVAILABLE_GATES[current_gate]['Vgp2'], AVAILABLE_GATES[current_gate]['Vgp3']]
             
             # Reset transforms
             self.Transform_robot_gate = None
@@ -511,6 +513,8 @@ class PrismMonitorWidget(QMainWindow):
 
             # Empty gate positions
             V_leica_prism_robot = [[None]*3 for i in range(3)]
+            # Reset offsets to robot
+            V_robot_prism = [AVAILABLE_BASE[current_base]['Vrq1'], AVAILABLE_BASE[current_base]['Vrq2'], AVAILABLE_BASE[current_base]['Vrq3']]
 
             # Reset transforms
             self.Transform_robot_gate = None
