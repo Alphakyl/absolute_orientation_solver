@@ -53,9 +53,12 @@ AVAILABLE_PRISMS = {
 # List of base dictionaries
 AVAILABLE_BASE = {
     "UGV": {
-        "Vrq1"      : [-0.0713284, 0.0768284, 0.0209],
-        "Vrq2"      : [0.0713284, -0.0768284, 0.0209],
-        "Vrq3"      : [-0.0713284, -0.0768284, 0.0209],
+        # "Vrq1"      : [-0.0713284, 0.0768284, 0.0209],
+        # "Vrq2"      : [0.0713284, -0.0768284, 0.0209],
+        # "Vrq3"      : [-0.0713284, -0.0768284, 0.0209],
+        "Vrq1"      : [-0.0713284, 0.0768284, 0.0],
+        "Vrq2"      : [0.0713284, -0.0768284, 0.0],
+        "Vrq3"      : [-0.0713284, -0.0768284, 0.0],
     },
     "UAV": {
         "Vrq1"      : [-0.25, -.1, -.205],
@@ -401,7 +404,7 @@ class PrismMonitorWidget(QMainWindow):
     
     def find_location(self,group_label,prism_label):
         print group_label, prism_label
-        global V_leica_prism_gate, V_leica_prism_robot
+        global V_leica_prism_gate, V_leica_prism_robot, V_robot_prism, V_gate_prism
 
         # For the correct group label and prism label find the TF
         rospy.loginfo("Calculating %s %s location", group_label, prism_label)
