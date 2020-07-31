@@ -54,12 +54,12 @@ AVAILABLE_PRISMS = {
 # List of base dictionaries
 AVAILABLE_BASE = {
     "UGV": {
-        # "Vrq1"      : [-0.0713284, 0.0768284, 0.0209],
-        # "Vrq2"      : [0.0713284, -0.0768284, 0.0209],
-        # "Vrq3"      : [-0.0713284, -0.0768284, 0.0209],
-        "Vrq1"      : [-0.0713284, 0.0768284, 0.0],
-        "Vrq2"      : [0.0713284, -0.0768284, 0.0],
-        "Vrq3"      : [-0.0713284, -0.0768284, 0.0],
+        "Vrq1"      : [-0.0713284, 0.0768284, 0.0209],
+        "Vrq2"      : [0.0713284, -0.0768284, 0.0209],
+        "Vrq3"      : [-0.0713284, -0.0768284, 0.0209],         
+        # "Vrq1"      : [-0.0713284, 0.0768284, 0.0],
+        # "Vrq2"      : [0.0713284, -0.0768284, 0.0],
+        # "Vrq3"      : [-0.0713284, -0.0768284, 0.0],
     },
     "UAV": {
         "Vrq1"      : [-0.25, -.1, -.205],
@@ -347,9 +347,10 @@ class PrismMonitorWidget(QMainWindow):
 
         # If the transform has not been found previously set the transform
         if not self.Trg_found:
-            rospy.loginfo("Robot->Gate:\n%s, %s",\
+            rospy.loginfo("Robot->Gate:\n%s, %s\n%s",\
                 tf.transformations.translation_from_matrix(self.Transform_robot_gate).__str__(),\
-                [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(self.Transform_robot_gate, 'sxyz')].__str__())
+                [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(self.Transform_robot_gate, 'sxyz')].__str__(),\
+                [elem for elem in tf.transformations.quaternion_from_matrix(self.Transform_robot_gate)].__str__())
             # Legacy in case we need to project to 2d in the future
             if project_transform_from_3d_to_2d:
                 rospy.loginfo("Projecting 3d transfrom to x-y plane...")
@@ -419,24 +420,24 @@ class PrismMonitorWidget(QMainWindow):
             if not all([i==0 for i in pos]):
                 V_leica_prism_gate[self.point_from_label(prism_label)] = pos
 
-            # Apply an offset based on the height of prisms
-            delta_z = AVAILABLE_PRISMS[CURRENT_PRISM[group_label][prism_label]]["z"]
-            if isinstance(delta_z, list):
-                ropsy.logerror("Multiple available prisms of same name.")
-                return pos
-            V_gate_prism[self.point_from_label(prism_label)][2] += delta_z
+                # Apply an offset based on the height of prisms
+                delta_z = AVAILABLE_PRISMS[CURRENT_PRISM[group_label][prism_label]]["z"]
+                if isinstance(delta_z, list):
+                    ropsy.logerror("Multiple available prisms of same name.")
+                    return pos
+                V_gate_prism[self.point_from_label(prism_label)][2] += delta_z
 
         elif group_label == 'Robot':
             # Check that the returned pose isn't the default pose
             if not all([i==0 for i in pos]):
                 V_leica_prism_robot[self.point_from_label(prism_label)] = pos
         
-            # Apply an offset based on the height of prisms
-            delta_z = AVAILABLE_PRISMS[CURRENT_PRISM[group_label][prism_label]]["z"]
-            if isinstance(delta_z, list):
-                ropsy.logerror("Multiple available prisms of same name.")
-                return pos
-            V_robot_prism[self.point_from_label(prism_label)][2] += delta_z
+                # Apply an offset based on the height of prisms
+                delta_z = AVAILABLE_PRISMS[CURRENT_PRISM[group_label][prism_label]]["z"]
+                if isinstance(delta_z, list):
+                    ropsy.logerror("Multiple available prisms of same name.")
+                    return pos
+                V_robot_prism[self.point_from_label(prism_label)][2] += delta_z
         
         else:
             rospy.logerror("Invalid Group Label")
