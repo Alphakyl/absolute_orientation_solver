@@ -11,6 +11,7 @@ import tf
 import numpy as np 
 from geometry_msgs.msg import *
 from leica_ros_msgs.srv import *
+import copy
 
 #import threading
 
@@ -98,8 +99,8 @@ AVAILABLE_GATES = {
 
 
 # Empty global variables for storing prism points (Given values and calculated from the Leica)
-V_gate_prism = [AVAILABLE_GATES[current_gate]['Vgp1'], AVAILABLE_GATES[current_gate]['Vgp2'], AVAILABLE_GATES[current_gate]['Vgp3']]
-V_robot_prism = [AVAILABLE_BASE[current_base]['Vrq1'], AVAILABLE_BASE[current_base]['Vrq2'], AVAILABLE_BASE[current_base]['Vrq3']]
+V_gate_prism = [copy.deepcopy(AVAILABLE_GATES[current_gate]['Vgp1']), copy.deepcopy(AVAILABLE_GATES[current_gate]['Vgp2']), copy.deepcopy(AVAILABLE_GATES[current_gate]['Vgp3'])]
+V_robot_prism = [copy.deepcopy(AVAILABLE_BASE[current_base]['Vrq1']), copy.deepcopy(AVAILABLE_BASE[current_base]['Vrq2']), copy.deepcopy(AVAILABLE_BASE[current_base]['Vrq3'])]
 V_leica_prism_gate = [[None]*3 for i in range(3)]
 V_leica_prism_robot = [[None]*3 for i in range(3)]
 
@@ -403,8 +404,8 @@ class PrismMonitorWidget(QMainWindow):
                 button.clicked.connect(partial(self.find_location,group_label,prism_label))
     
     def find_location(self,group_label,prism_label):
-        print group_label, prism_label
         global V_leica_prism_gate, V_leica_prism_robot, V_robot_prism, V_gate_prism
+        print group_label, prism_label
 
         # For the correct group label and prism label find the TF
         rospy.loginfo("Calculating %s %s location", group_label, prism_label)
@@ -495,8 +496,10 @@ class PrismMonitorWidget(QMainWindow):
             # Empty gate positions
             V_leica_prism_gate = [[None]*3 for i in range(3)]
             # Reset offsets to gate
-            V_gate_prism = [AVAILABLE_GATES[current_gate]['Vgp1'], AVAILABLE_GATES[current_gate]['Vgp2'], AVAILABLE_GATES[current_gate]['Vgp3']]
-            
+            print V_gate_prism
+            V_gate_prism = [copy.deepcopy(AVAILABLE_GATES[current_gate]['Vgp1']), copy.deepcopy(AVAILABLE_GATES[current_gate]['Vgp2']), copy.deepcopy(AVAILABLE_GATES[current_gate]['Vgp3'])]
+            print V_gate_prism
+
             # Reset transforms
             self.Transform_robot_gate = None
             self.Transform_gate_leica = None
@@ -517,7 +520,7 @@ class PrismMonitorWidget(QMainWindow):
             # Empty gate positions
             V_leica_prism_robot = [[None]*3 for i in range(3)]
             # Reset offsets to robot
-            V_robot_prism = [AVAILABLE_BASE[current_base]['Vrq1'], AVAILABLE_BASE[current_base]['Vrq2'], AVAILABLE_BASE[current_base]['Vrq3']]
+            V_robot_prism = [copy.deepcopy(AVAILABLE_BASE[current_base]['Vrq1']), copy.deepcopy(AVAILABLE_BASE[current_base]['Vrq2']), copy.deepcopy(AVAILABLE_BASE[current_base]['Vrq3'])]
 
             # Reset transforms
             self.Transform_robot_gate = None
