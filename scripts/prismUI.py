@@ -343,8 +343,13 @@ class PrismMonitorWidget(QMainWindow):
             return
 
         # Trg = Trl*(Tgl)^(-1)
-        self.Transform_robot_gate = tf.transformations.concatenate_matrices(tf.transformations.inverse_matrix(self.Transform_robot_leica),self.Transform_gate_leica)
+        self.Transform_robot_gate = tf.transformations.concatenate_matrices(tf.transformations.inverse_matrix(self.transform_gate_leica),self.Transform_robot_leica)
+        # self.Transform_robot_gate = tf.transformations.concatenate_matrices(tf.transformations.inverse_matrix(self.Transform_robot_leica),self.Transform_gate_leica)
 
+        # # Invert so origin from robot frame is now robot from origin frame
+        # self.Transform_robot_gate = tf.transformations.inverse_matrix(self.Transform_robot_gate)
+        
+        
         # If the transform has not been found previously set the transform
         if not self.Trg_found:
             rospy.loginfo("Robot->Gate:\n%s, %s\n%s",\
