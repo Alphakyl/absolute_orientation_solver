@@ -49,7 +49,7 @@ AVAILABLE_PRISMS = {
         }
 }
 
-#AVAILABLE_ROBOTS = ["H01","H02","H03","T01","T02","T03","L01","A01","A02","A03","A99"]
+AVAILABLE_ROBOTS = ["H01","H02","H03","T01","T02","T03","L01","A01","A02","A03","A99"]
 
 # List of base dictionaries
 AVAILABLE_BASE = {
@@ -143,9 +143,12 @@ class PrismMonitorWidget(QMainWindow):
         self.Transform_gate_leica = None
         self.Transform_robot_leica = None
 
-        # Create publisher dictionary to store a publisher per robot
+        # Create publisher
         robot_topic = '/leica/robot_to_origin_transform'
         self.pub = rospy.Publisher(robot_topic, TransformStamped, queue_size=10)
+        
+        # Create list of dictionaries to store transforms
+        self.Transforms = []
         #self.pub = {}
         #for robot in AVAILABLE_ROBOTS:
         #    robot_topic = '/' + robot + '/set_world_tf'
@@ -166,10 +169,6 @@ class PrismMonitorWidget(QMainWindow):
 
         # Wire up buttons to do various functions
         self._connectSignals()
-
-        # launch publisher thread
-        # self.pub_thread = threading.Thread(target=self._calcTF, args=())
-        # self.pub_thread.start()
 
     def _createButtonAndPrismComboBox(self, group_label, box_label):
         # Generic button and combo box layout for prism selection
