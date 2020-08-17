@@ -364,7 +364,7 @@ class PrismMonitorWidget(QMainWindow):
             return
 
         # Trg = Trl*(Tgl)^(-1)
-        self.Transform_robot_gate = tf.transformations.concatenate_matrices(tf.transformations.inverse_matrix(self.transform_gate_leica),self.Transform_robot_leica)
+        self.Transform_robot_gate = tf.transformations.concatenate_matrices(tf.transformations.inverse_matrix(self.Transform_gate_leica),self.Transform_robot_leica)
         # self.Transform_robot_gate = tf.transformations.concatenate_matrices(tf.transformations.inverse_matrix(self.Transform_robot_leica),self.Transform_gate_leica)
 
         # # Invert so origin from robot frame is now robot from origin frame
