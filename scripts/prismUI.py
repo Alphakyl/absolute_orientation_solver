@@ -50,6 +50,8 @@ AVAILABLE_PRISMS = {
 }
 
 AVAILABLE_ROBOTS = ["H01","H02","H03","T01","T02","T03","L01","A01","A02","A03","A99"]
+AVAILABLE_ROBOT_SCANS = dict((el,[]) for el in AVAILABLE_ROBOTS)
+ROBOT_SCANS = dict((el,['0', '1']) for el in AVAILABLE_ROBOTS)
 
 # List of base dictionaries
 AVAILABLE_BASE = {
@@ -273,8 +275,9 @@ class PrismMonitorWidget(QMainWindow):
     
     def _createRobotTarget(self):
         # Creating the target robot functions in the GUI for passing TFs
-        robotGroupLayout = QHBoxLayout()
+        robotGroupLayout = QVBoxLayout()
         robotGroup = QGroupBox('Target Robot')
+        self.model = QStandardItemModel()
 
         # Creating a button for calculating full transform
         self.calculate_full_button = QPushButton('Calculate')
@@ -282,9 +285,28 @@ class PrismMonitorWidget(QMainWindow):
         robotGroupLayout.addWidget(self.calculate_full_button)
 
         # Creating a combo box with a list of potential robots
-        #self.robotOption = QComboBox()
+        scanGroupLayout = QHBoxLayout()
+        scanGroup = QGroupBox('Scan')
+        self.robotOption = QComboBox()
+        self.robotOption.setModel(self.model)
+        self.scanOption = QComboBox()
+        self.scanOption.setModel(self.model)
+
+        # Add data to combo boxes
+        for k,v in AVAILABLE_ROBOT_SCANS.items():
+            robot = QStandardItem(k)
+            self.model.appendRow(robot)
+            for value in v:
+                scan_num = QStandardItem(value)
+                robot.appendRow(scan_num)
+
         #self.robotOption.addItems(AVAILABLE_ROBOTS)
         #self.robotOption.currentIndexChanged.connect(self._current_robot)
+        scanGroupLayout.addWidget(self.robotOption)
+        scanGroupLayout.addWidget(self.scanOption)
+        scanGroup.setLayout(scanGroupLayout)
+
+        robotGroupLayout.addWidget(scanGroup)
         #robotGroupLayout.addWidget(self.robotOption)
 
         # Creating a sendTF button
