@@ -16,7 +16,8 @@ import copy
 #import threading
 
 # GLOBAL VARIABLES
-robot_ns = "H01"
+ROBOT_TF_IS_CALCULATED_FOR = "H01"
+ROBOT_TF_BEING_SENT = "H01"
 child_frame_id = "world"
 # child_frame_id = "gate_leica"
 parent_frame_id = "body_aligned_imu_link"
@@ -24,6 +25,7 @@ current_gate = "Small"
 current_base = "oldUGV"
 project_transform_from_3d_to_2d = False
 num_publishes = 10
+INDEX = 0
 
 # Dictionaries the hold informations on various prisms and bases
 AVAILABLE_PRISMS = {
@@ -50,8 +52,9 @@ AVAILABLE_PRISMS = {
 }
 
 AVAILABLE_ROBOTS = ["H01","H02","H03","T01","T02","T03","L01","A01","A02","A03","A99"]
+NUMBER = map(str, range(10))
 AVAILABLE_ROBOT_SCANS = dict((el,[]) for el in AVAILABLE_ROBOTS)
-ROBOT_SCANS = dict((el,['0', '1']) for el in AVAILABLE_ROBOTS)
+ROBOT_SCANS = dict((el,['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']) for el in AVAILABLE_ROBOTS)
 
 # List of base dictionaries
 AVAILABLE_BASE = {
@@ -165,7 +168,11 @@ class PrismMonitorWidget(QMainWindow):
         # Define the robot layout (Second part of the central widget)
         self._createRobotCalculate()
         # Define the target layout (Third part of central widget)
-        self._createRobotTarget()
+        self._createFinalCalculate()
+        # Define send block
+        self._createSend()
+
+
         # Create an exit button for convenience
         self._createExit()
 
@@ -273,41 +280,49 @@ class PrismMonitorWidget(QMainWindow):
         prismGroup.setLayout(prismGroupLayout)
         self.layout.addWidget(prismGroup)
     
-    def _createRobotTarget(self):
+    def _createFinalCalculate(self):
         # Creating the target robot functions in the GUI for passing TFs
         robotGroupLayout = QVBoxLayout()
         robotGroup = QGroupBox('Target Robot')
-        self.model = QStandardItemModel()
 
+        # Creating a dropdown to select which robot the calculation is for
+        self.calculate_combo = QComboBox()
+        self.calculate_combo.addItems(AVAILABLE_ROBOTS)
+        robotGroupLayout.addWidget(self.calculate_combo)
+        self.calculate_combo.currentIndexChanged.connect(self._current_robot_calc)
+        
         # Creating a button for calculating full transform
         self.calculate_full_button = QPushButton('Calculate')
         self.calculate_full_button.clicked.connect(self._calcTF)
         robotGroupLayout.addWidget(self.calculate_full_button)
 
-        # Creating a combo box with a list of potential robots
+        # Adding layout to GUI
+        robotGroup.setLayout(robotGroupLayout)
+        self.layout.addWidget(robotGroup)
+
+    def _createSend(self):
+        # Creating the target robot functions in the GUI for passing TFs
+        robotGroupLayout = QVBoxLayout()
+        robotGroup = QGroupBox('Target Robot')
+
+        # Creating a combo box with a list of potential robots and their scan ID
         scanGroupLayout = QHBoxLayout()
         scanGroup = QGroupBox('Scan')
+        # Robot combo box
         self.robotOption = QComboBox()
-        self.robotOption.setModel(self.model)
+        self.robotOption.addItems(AVAILABLE_ROBOTS)
+        self.robotOption.currentIndexChanged.connect(self._current_robot_send)
+        # Scan ID
         self.scanOption = QComboBox()
-        self.scanOption.setModel(self.model)
-
-        # Add data to combo boxes
-        for k,v in AVAILABLE_ROBOT_SCANS.items():
-            robot = QStandardItem(k)
-            self.model.appendRow(robot)
-            for value in v:
-                scan_num = QStandardItem(value)
-                robot.appendRow(scan_num)
-
-        #self.robotOption.addItems(AVAILABLE_ROBOTS)
-        #self.robotOption.currentIndexChanged.connect(self._current_robot)
+        self.scanOption.addItems(NUMBER)
+        self.scanOption.currentIndexChanged.connect(self._current_index)
+        # Add combo boxes to layout
         scanGroupLayout.addWidget(self.robotOption)
         scanGroupLayout.addWidget(self.scanOption)
+        # Add layout to GUI
         scanGroup.setLayout(scanGroupLayout)
 
         robotGroupLayout.addWidget(scanGroup)
-        #robotGroupLayout.addWidget(self.robotOption)
 
         # Creating a sendTF button
         self.sendtfbtn = QPushButton('Send TF')
@@ -318,17 +333,20 @@ class PrismMonitorWidget(QMainWindow):
         robotGroup.setLayout(robotGroupLayout)
         self.layout.addWidget(robotGroup)
 
+
     #################################################################
     # Button connections and general functions here
     #################################################################
     def _sendTF(self):
-        global child_frame_id, parent_frame_id, robot_ns, num_publishes
+        global child_frame_id, parent_frame_id, ROBOT_TF_BEING_SENT, INDEX, AVAILABLE_ROBOT_SCANS, num_publishes 
 
         r = rospy.Rate(10)
-        # Check if the tranform exists and is the correct size
-        if self.Trg_found == False:
-            rospy.logwarn("Can't send TF. Tf not found yet.")
+        if not (INDEX < len(AVAILABLE_ROBOT_SCANS[ROBOT_TF_BEING_SENT])):
+            rospy.logwarn("Index too large, last index for robot %s: %s", ROBOT_TF_BEING_SENT, (len(AVAILABLE_ROBOT_SCANS[ROBOT_TF_BEING_SENT]).__str__))
             return
+
+        self.Transform_robot_gate = AVAILABLE_ROBOT_SCANS[ROBOT_TF_BEING_SENT][INDEX]
+        # Check if the tranform exists and is the correct size
         if not self.Transform_robot_gate.shape==(4,4):
             rospy.logwarn("Can't send TF. Tf is wrong size.")
             return
@@ -346,14 +364,14 @@ class PrismMonitorWidget(QMainWindow):
         tf_msg.transform.rotation.z = tf.transformations.quaternion_from_matrix(self.Transform_robot_gate)[2]
         tf_msg.transform.rotation.w = tf.transformations.quaternion_from_matrix(self.Transform_robot_gate)[3]
 
-        # Publish the message num_publishes times to the robot_ns publisher
+        # Publish the message num_publishes times to the ROBOT_TF_IS_CALCULATED_FOR publisher
         for i in range(num_publishes):
             print "here"
             self.pub.publish(tf_msg)
             r.sleep()
         
     def _calcTF(self):
-        global project_transform_from_3d_to_2d
+        global project_transform_from_3d_to_2d, ROBOT_TF_IS_CALCULATED_FOR, AVAILABLE_ROBOT_SCANS
 
         # Check if gate and robot to leica transforms are available
         if not self.Tgl_found:
@@ -364,7 +382,7 @@ class PrismMonitorWidget(QMainWindow):
             return
 
         # Trg = Trl*(Tgl)^(-1)
-        self.Transform_robot_gate = tf.transformations.concatenate_matrices(tf.transformations.inverse_matrix(self.Transform_gate_leica),self.Transform_robot_leica)
+        AVAILABLE_ROBOT_SCANS[ROBOT_TF_IS_CALCULATED_FOR].append(tf.transformations.concatenate_matrices(tf.transformations.inverse_matrix(self.Transform_gate_leica),self.Transform_robot_leica))
         # self.Transform_robot_gate = tf.transformations.concatenate_matrices(tf.transformations.inverse_matrix(self.Transform_robot_leica),self.Transform_gate_leica)
 
         # # Invert so origin from robot frame is now robot from origin frame
@@ -374,15 +392,15 @@ class PrismMonitorWidget(QMainWindow):
         # If the transform has not been found previously set the transform
         if not self.Trg_found:
             rospy.loginfo("Robot->Gate:\n%s, %s\n%s",\
-                tf.transformations.translation_from_matrix(self.Transform_robot_gate).__str__(),\
-                [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(self.Transform_robot_gate, 'sxyz')].__str__(),\
-                [elem for elem in tf.transformations.quaternion_from_matrix(self.Transform_robot_gate)].__str__())
+                tf.transformations.translation_from_matrix(AVAILABLE_ROBOT_SCANS[ROBOT_TF_IS_CALCULATED_FOR][-1]).__str__(),\
+                [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(AVAILABLE_ROBOT_SCANS[ROBOT_TF_IS_CALCULATED_FOR][-1], 'sxyz')].__str__(),\
+                [elem for elem in tf.transformations.quaternion_from_matrix(AVAILABLE_ROBOT_SCANS[ROBOT_TF_IS_CALCULATED_FOR][-1])].__str__())
             # Legacy in case we need to project to 2d in the future
             if project_transform_from_3d_to_2d:
                 rospy.loginfo("Projecting 3d transfrom to x-y plane...")
-                yaw, pitch, roll = tf.transformations.euler_from_matrix(self.Transform_robot_gate[0:3,0:3], axes="szyx")
+                yaw, pitch, roll = tf.transformations.euler_from_matrix(AVAILABLE_ROBOT_SCANS[ROBOT_TF_IS_CALCULATED_FOR][-1][0:3,0:3], axes="szyx")
                 R = tf.transformations.euler_matrix(yaw, 0.0, 0.0, axes="szyx")
-                self.Transform_robot_gate[0:3, 0:3] = R[0:3, 0:3]
+                AVAILABLE_ROBOT_SCANS[ROBOT_TF_IS_CALCULATED_FOR][-1][0:3, 0:3] = R[0:3, 0:3]
                 rospy.loginfo("New (yaw, pitch, roll) = (%0.4f, %0.4f, %0.4f)" % (yaw*180.0/np.pi, 0.0, 0.0))
         # Mark TF as found
         self.Trg_found = True
@@ -403,11 +421,23 @@ class PrismMonitorWidget(QMainWindow):
         V_robot_prism = [AVAILABLE_BASE[current_base]['Vrq1'], AVAILABLE_BASE[current_base]['Vrq2'], AVAILABLE_BASE[current_base]['Vrq3']]
         print current_base, V_robot_prism
 
-    def _current_robot(self):
-        global robot_ns
+    def _current_robot_calc(self):
+        global ROBOT_TF_IS_CALCULATED_FOR
         # Set the current robot to the one shown in the combo box
-        robot_ns = self.robotOption.currentText()
-        print robot_ns
+        ROBOT_TF_IS_CALCULATED_FOR = self.calculate_combo.currentText()
+        print ROBOT_TF_IS_CALCULATED_FOR
+    
+    def _current_robot_send(self):
+        global ROBOT_TF_BEING_SENT
+        # Set the current robot to the one shown in the combo box
+        ROBOT_TF_BEING_SENT = self.robotOption.currentText()
+        print ROBOT_TF_BEING_SENT
+
+    def _current_index(self):
+        global INDEX
+        # set the current tf index to the one shown in the combo box
+        INDEX = int(self.scanOption.currentText())
+        print INDEX
 
     def _current_prism(self, group_label, prism_label):
         global CURRENT_PRISM
