@@ -355,7 +355,7 @@ class PrismMonitorWidget(QMainWindow):
         tf_msg = TransformStamped()
         tf_msg.header.stamp = rospy.Time.now()
         tf_msg.header.frame_id = parent_frame_id
-        tf_msg.child_frame_id = child_frame_id
+        tf_msg.child_frame_id = ROBOT_TF_BEING_SENT
         tf_msg.transform.translation.x = tf.transformations.translation_from_matrix(self.Transform_robot_gate)[0]
         tf_msg.transform.translation.y = tf.transformations.translation_from_matrix(self.Transform_robot_gate)[1]
         tf_msg.transform.translation.z = tf.transformations.translation_from_matrix(self.Transform_robot_gate)[2]
