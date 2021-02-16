@@ -547,6 +547,8 @@ class PrismMonitorWidget(QMainWindow):
                         got_pos = True
                         # Re-enable button on total failure
                         prism_btn.setEnabled(True)
+                        pos_sum = [0,0,0]
+                        break
                 else:
                     pos_sum = pos_sum+temp_pos
                     avg_count = avg_count+1
