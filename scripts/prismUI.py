@@ -51,7 +51,7 @@ AVAILABLE_PRISMS = {
         }
 }
 
-AVAILABLE_ROBOTS = ["H01","H02","H03","T01","T02","T03","L01","A01","A02","A03","A99"]
+AVAILABLE_ROBOTS = ["H01","H02","H03","T01","T02","T03","L01","A01","A02","A03","A99","D01"]
 NUMBER = map(str, range(10))
 AVAILABLE_ROBOT_SCANS = dict((el,[]) for el in AVAILABLE_ROBOTS)
 ROBOT_SCANS = dict((el,['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']) for el in AVAILABLE_ROBOTS)
@@ -460,6 +460,7 @@ class PrismMonitorWidget(QMainWindow):
 
     def btnQuit_onclick(self):
         # self.pub_thread.join()
+        LS.LeicaStopTracking()
         self.parent().close()
 
     def _connectSignals(self):
@@ -534,7 +535,7 @@ class PrismMonitorWidget(QMainWindow):
             # Run tracking
             LS.LeicaStartTracking()
             avg_count = 0
-            pos_sum = [0,0,0]
+            pos_sum = np.zeros(3)
             while avg_count < 10:
                 temp_pos = [0,0,0]
                 temp_pos = LS.LeicaGetPos()
@@ -553,12 +554,13 @@ class PrismMonitorWidget(QMainWindow):
                         pos_sum = [0,0,0]
                         break
                 else:
-                    pos_sum = pos_sum+temp_pos
+                    pos_sum = pos_sum+np.array(temp_pos)
                     avg_count = avg_count+1
             # End tracking
             LS.LeicaStopTracking()
             pos = pos_sum/10
-        return pos
+            got_pose=True
+        return pos.tolist()
 
     def Reset_onclick(self, group_label):
         global V_gate_prism, V_leica_prism_gate, V_leica_prism_robot, V_robot_prism, current_gate, current_base, AVAILABLE_BASE, AVAILABLE_GATES
