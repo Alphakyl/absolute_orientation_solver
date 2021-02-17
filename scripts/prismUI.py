@@ -533,21 +533,31 @@ class PrismMonitorWidget(QMainWindow):
         while not got_pos:
             # Run tracking
             LS.LeicaStartTracking()
-            pos = LS.LeicaGetPos()
-            got_pos = not all([i==0 for i in pos])
-            # If failure
-            if not got_pos:
-                no_fails += 1
-                if no_fails<max_no_fails:
-                    rospy.logwarn("Cannot get pos from Leica. Trying again (%d/%d attempts left).",max_no_fails-no_fails,max_no_fails)
-                    rospy.logwarn("Possible causes: \n- target prism appears too close to another prism")
+            avg_count = 0
+            pos_sum = [0,0,0]
+            while avg_count < 10:
+                temp_pos = [0,0,0]
+                temp_pos = LS.LeicaGetPos()
+                got_pos = not all([i==0 for i in temp_pos])
+                # If failure
+                if not got_pos:
+                    no_fails += 1
+                    if no_fails<max_no_fails:
+                        rospy.logwarn("Cannot get pos from Leica. Trying again (%d/%d attempts left).",max_no_fails-no_fails,max_no_fails)
+                        rospy.logwarn("Possible causes: \n- target prism appears too close to another prism")
+                    else:
+                        rospy.logwarn("Cannot get pos from Leica. Aborting.")
+                        got_pos = True
+                        # Re-enable button on total failure
+                        prism_btn.setEnabled(True)
+                        pos_sum = [0,0,0]
+                        break
                 else:
-                    rospy.logwarn("Cannot get pos from Leica. Aborting.")
-                    got_pos = True
-                    # Re-enable button on total failure
-                    prism_btn.setEnabled(True)
+                    pos_sum = pos_sum+temp_pos
+                    avg_count = avg_count+1
             # End tracking
             LS.LeicaStopTracking()
+            pos = pos_sum/10
         return pos
 
     def Reset_onclick(self, group_label):
