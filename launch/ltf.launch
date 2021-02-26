@@ -1,5 +1,5 @@
 <launch>
     <!-- <include file="$(find marble_common)/launch/launch_multimaster.launch" /> -->
     <node pkg="ltf" type="prismUI.py" name="Ui_Monitor" output="screen" />
-    <node pkg="rosbag" type="record" name="record_origin" args="-a"/>
+    <node pkg="rosbag" type="record" name="record_origin" args="-o $(find ltf)/data/prism_loc_and_tf /tf /tf_static /leica_node/position /leica/robot_to_origin_transform" output="screen"/>
 </launch>
