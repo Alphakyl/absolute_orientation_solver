@@ -530,7 +530,7 @@ class PrismMonitorWidget(QMainWindow):
         # Check if we have the position
         got_pos = False
         no_fails = 0
-        max_no_fails = 5
+        max_no_fails = 2
         while not got_pos:
             # Run tracking
             LS.LeicaStartTracking()
@@ -551,9 +551,11 @@ class PrismMonitorWidget(QMainWindow):
                         got_pos = True
                         # Re-enable button on total failure
                         prism_btn.setEnabled(True)
-                        pos_sum = [0,0,0]
+                        pos_sum = np.zeros(3)
+                        temp_pos = [0,0,0]
                         break
                 else:
+                    print temp_pos
                     pos_sum = pos_sum+np.array(temp_pos)
                     avg_count = avg_count+1
             # End tracking
