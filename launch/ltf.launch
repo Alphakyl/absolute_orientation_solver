@@ -1,4 +1,5 @@
 <launch>
     <!-- <include file="$(find marble_common)/launch/launch_multimaster.launch" /> -->
     <node pkg="ltf" type="prismUI.py" name="Ui_Monitor" output="screen" />
+    <node pkg="rosbag" type="record" name="record_origin" args="-a"/>
 </launch>
