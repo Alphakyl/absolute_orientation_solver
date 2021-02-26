@@ -1,0 +1,11 @@
+First bag: micro prisms, gate->leica relative offset, gate->gate as robot 0
+Second bag: mini prisms, gate->leica relative offset again, seemingly more variance on prism, gate->gate more zero than before
+Third bag: leica node restarted, mini prisms, much worse roll offset user error, didn't switch to using mini prisms (was this the problem at edgar?) after fixing same results as above
+Fourth bag: moved leica, rotated "black line origin marker" to face 90deg left, still mini prisms, still consistently wrong roll and pitch, different yaw (obv)
+Fifth bag: move leica, levelled "base" of leica (tripod portion, not top portion), used micro for all on accident instead of mini, same results
+Sixth bag: move lieca, closer to base, use micro on accident again, first tf better (first noticable change) 
+Seventh bag: move leica, further from base than original position, mini prisms used, better tf, same as sixth bag though, still not flat
+Eight bag: micro prisms, distant leica, way worse pitch and roll on gate (sadge)
+Ninth bag: micro prisms, just code restart for both leica and prism gui, same results, seems smaller prisms matter more at distance
+ 
+
