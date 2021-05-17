@@ -51,7 +51,7 @@ AVAILABLE_PRISMS = {
         }
 }
 
-AVAILABLE_ROBOTS = ["H01","H02","H03","T01","T02","T03","L01","A01","A02","A03","A99"]
+AVAILABLE_ROBOTS = ["H01","H02","H03","T01","T02","T03","L01","A01","A02","A03","A99","D01"]
 NUMBER = map(str, range(10))
 AVAILABLE_ROBOT_SCANS = dict((el,[]) for el in AVAILABLE_ROBOTS)
 ROBOT_SCANS = dict((el,['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']) for el in AVAILABLE_ROBOTS)
@@ -101,9 +101,12 @@ AVAILABLE_GATES = {
         "Vgp3"      : [-0.045, -0.100025, 0], # right
     },
     "Small": {
-        "Vgp1"      : [-0.0713284, 0.0768284, 0.0],
-        "Vgp2"      : [0.0713284, -0.0768284, 0.0],
-        "Vgp3"      : [-0.0713284, -0.0768284, 0.0],
+        # "Vgp1"      : [-0.0713284, 0.0768284, 0.0],
+        # "Vgp2"      : [0.0713284, -0.0768284, 0.0],
+        # "Vgp3"      : [-0.0713284, -0.0768284, 0.0],
+        "Vgp1"      : [-0.12481, 0.07318, 0.0], # left x,y,z
+        "Vgp2"      : [0.01489,-0.06652, 0.0], # top
+        "Vgp3"      : [-0.12481,-0.06652, 0.0], # right 
     }
 }
 
@@ -457,6 +460,7 @@ class PrismMonitorWidget(QMainWindow):
 
     def btnQuit_onclick(self):
         # self.pub_thread.join()
+        LS.LeicaStopTracking()
         self.parent().close()
 
     def _connectSignals(self):
@@ -526,26 +530,39 @@ class PrismMonitorWidget(QMainWindow):
         # Check if we have the position
         got_pos = False
         no_fails = 0
-        max_no_fails = 5
+        max_no_fails = 2
         while not got_pos:
             # Run tracking
             LS.LeicaStartTracking()
-            pos = LS.LeicaGetPos()
-            got_pos = not all([i==0 for i in pos])
-            # If failure
-            if not got_pos:
-                no_fails += 1
-                if no_fails<max_no_fails:
-                    rospy.logwarn("Cannot get pos from Leica. Trying again (%d/%d attempts left).",max_no_fails-no_fails,max_no_fails)
-                    rospy.logwarn("Possible causes: \n- target prism appears too close to another prism")
+            avg_count = 0
+            pos_sum = np.zeros(3)
+            while avg_count < 10:
+                temp_pos = [0,0,0]
+                temp_pos = LS.LeicaGetPos()
+                got_pos = not all([i==0 for i in temp_pos])
+                # If failure
+                if not got_pos:
+                    no_fails += 1
+                    if no_fails<max_no_fails:
+                        rospy.logwarn("Cannot get pos from Leica. Trying again (%d/%d attempts left).",max_no_fails-no_fails,max_no_fails)
+                        rospy.logwarn("Possible causes: \n- target prism appears too close to another prism")
+                    else:
+                        rospy.logwarn("Cannot get pos from Leica. Aborting.")
+                        got_pos = True
+                        # Re-enable button on total failure
+                        prism_btn.setEnabled(True)
+                        pos_sum = np.zeros(3)
+                        temp_pos = [0,0,0]
+                        break
                 else:
-                    rospy.logwarn("Cannot get pos from Leica. Aborting.")
-                    got_pos = True
-                    # Re-enable button on total failure
-                    prism_btn.setEnabled(True)
+                    print temp_pos
+                    pos_sum = pos_sum+np.array(temp_pos)
+                    avg_count = avg_count+1
             # End tracking
             LS.LeicaStopTracking()
-        return pos
+            pos = pos_sum/10
+            got_pose=True
+        return pos.tolist()
 
     def Reset_onclick(self, group_label):
         global V_gate_prism, V_leica_prism_gate, V_leica_prism_robot, V_robot_prism, current_gate, current_base, AVAILABLE_BASE, AVAILABLE_GATES

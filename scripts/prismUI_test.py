@@ -47,6 +47,8 @@ class PrismMonitorWidget(QMainWindow):
     # UI Stuff Here
     ###############################################################################
     def __init__(self,parent = None):
+        # End tracking
+        LS.LeicaStopTracking()
         # not sure what super does
         super(PrismMonitorWidget,self).__init__()
         # Create a vertical layout (separate stuff vertically)
@@ -126,15 +128,17 @@ class PrismMonitorWidget(QMainWindow):
         self.layout.addWidget(self.btnQuit)
 
     def btnQuit_onclick(self):
+        # End tracking
+        LS.LeicaStopTracking()
         self.parent().close()
 
     def btnSave_onclick(self):
         print 'saving mini'
-        np.savetxt("/home/kyle/catkin_ws/src/absolute_orientation_solver/data/mini" + str(int(time.time())) + ".csv",self.mini_array,delimiter=",")
+        np.savetxt("/home/base/marble_ws/src/absolute_orientation_solver/data/mini" + str(int(time.time())) + ".csv",self.mini_array,delimiter=",")
         print 'saving micro'
-        np.savetxt("/home/kyle/catkin_ws/src/absolute_orientation_solver/data/micro" + str(int(time.time())) + ".csv",self.micro_array,delimiter=",")
-        print 'saving mega'
-        np.savetxt("/home/kyle/catkin_ws/src/absolute_orientation_solver/data/mega" + str(int(time.time())) + ".csv",self.mega_array,delimiter=",")
+        np.savetxt("/home/base/marble_ws/src/absolute_orientation_solver/data/micro" + str(int(time.time())) + ".csv",self.micro_array,delimiter=",")
+        #print 'saving mega'
+        #np.savetxt("/home/base/marble_ws/src/absolute_orientation_solver/data/mega" + str(int(time.time())) + ".csv",self.mega_array,delimiter=",")
         print 'done saving'
 
     def _connectSignals(self):
@@ -157,17 +161,18 @@ class PrismMonitorWidget(QMainWindow):
             pos = self.getTFOnClick(prism_label)
             # Check that the returned pose isn't the default pose
             # print pos
-            if not all([i==0 for i in pos]):
-                if(prism_label == 'mini_360'):
-                    self.mini_array = np.append(self.mini_array,[pos],axis=0)
-                elif(prism_label == 'micro_360'):
-                    self.micro_array = np.append(self.micro_array,[pos],axis=0)
-                elif(prism_label == 'big_360'):
-                    self.mega_array = np.append(self.mega_array,[pos],axis=0)
-                else:
-                    print 'bad prism label' 
+            #if not all([i==0 for i in pos]):
+            if(prism_label == 'mini_360'):
+                self.mini_array = np.append(self.mini_array,np.array(pos),axis=0)
+            elif(prism_label == 'micro_360'):
+                self.micro_array = np.append(self.micro_array,np.array(pos),axis=0)
+            elif(prism_label == 'big_360'):
+                self.mega_array = np.append(self.mega_array,np.array(pos),axis=0)
+            else:
+                print 'bad prism label' 
 
     def getTFOnClick(self,prism_name):
+        total_pose = np.empty((0,3),float)
         # Create a dummy point
         pos = [0,0,0]
 
@@ -178,23 +183,30 @@ class PrismMonitorWidget(QMainWindow):
         got_pos = False
         no_fails = 0
         max_no_fails = 3
-        while not got_pos:
-            # Run tracking
-            LS.LeicaStartTracking()
-            pos = LS.LeicaGetPos()
-            got_pos = not all([i==0 for i in pos])
-            # If failure
-            if not got_pos:
-                no_fails += 1
-                if no_fails<max_no_fails:
-                    rospy.logwarn("Cannot get pos from Leica. Trying again (%d/%d attempts left).",max_no_fails-no_fails,max_no_fails)
-                    rospy.logwarn("Possible causes: \n- target prism appears too close to another prism")
-                else:
-                    rospy.logwarn("Cannot get pos from Leica. Aborting.")
-                    got_pos = True
-            # End tracking
-            LS.LeicaStopTracking()
-        return pos
+        j = 0
+        # Run tracking
+        LS.LeicaStartTracking()
+        while j<100:
+            got_pos = False
+            while not got_pos:
+                pos = LS.LeicaGetPos()
+                got_pos = not all([i==0 for i in pos])
+                # If failure
+                if not got_pos:
+                    no_fails += 1
+                    if no_fails<max_no_fails:
+                        rospy.logwarn("Cannot get pos from Leica. Trying again (%d/%d attempts left).",max_no_fails-no_fails,max_no_fails)
+                        rospy.logwarn("Possible causes: \n- target prism appears too close to another prism")
+                    else:
+                        rospy.logwarn("Cannot get pos from Leica. Aborting.")
+                        got_pos = True
+                print 'pos'+pos.__str__()
+                total_pose = np.append(total_pose,[pos],axis=0)
+            j = j+1
+            print 'j'+j.__str__()
+        # End tracking
+        LS.LeicaStopTracking()
+        return total_pose
     ################################################################################
     # End of PrismMonitorWidget Class
     ################################################################################
