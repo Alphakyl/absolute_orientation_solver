@@ -60,8 +60,8 @@ ROBOT_SCANS = dict((el,['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']) for e
 AVAILABLE_BASE = {
     "UGV": {
         "Vrq1"      : [-0.12481, 0.06652,-0.0045], # left x,y,z
-        "Vrq2"      : [0.01489,-0.7318,-0.0045], # top
-        "Vrq3"      : [-0.12481,-0.7318,-0.0045], # right 
+        "Vrq2"      : [0.01489,-0.07318,-0.0045], # top
+        "Vrq3"      : [-0.12481,-0.07318,-0.0045], # right 
         # Daigonal Ouster Plate with standoffs
         # "Vrq1"      : [-0.0713284, 0.0768284, 0.0463],
         # "Vrq2"      : [0.0713284, -0.0768284, 0.0463],
@@ -396,7 +396,7 @@ class PrismMonitorWidget(QMainWindow):
         
         # If the transform has not been found previously set the transform
         if not self.Trg_found:
-            rospy.loginfo("Robot->Gate:\n%s, %s\n%s",\
+            rospy.loginfo("Gate->Robot:\n%s, %s\n%s",\
                 tf.transformations.translation_from_matrix(AVAILABLE_ROBOT_SCANS[ROBOT_TF_IS_CALCULATED_FOR][-1]).__str__(),\
                 [elem*180/3.14 for elem in tf.transformations.euler_from_matrix(AVAILABLE_ROBOT_SCANS[ROBOT_TF_IS_CALCULATED_FOR][-1], 'sxyz')].__str__(),\
                 [elem for elem in tf.transformations.quaternion_from_matrix(AVAILABLE_ROBOT_SCANS[ROBOT_TF_IS_CALCULATED_FOR][-1])].__str__())
