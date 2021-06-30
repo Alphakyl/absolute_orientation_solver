@@ -1,0 +1,638 @@
+roslaunch ltf ltf.launch 
+... logging to /home/base/.ros/log/dc0b3c3c-d9dd-11eb-baaa-309c23903185/roslaunch-s02-6068.log
+Checking log directory for disk usage. This may take awhile.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+
+started roslaunch server http://S02:36377/
+
+SUMMARY
+========
+
+PARAMETERS
+ * /rosdistro: melodic
+ * /rosversion: 1.14.3
+
+NODES
+  /
+    Ui_Monitor (ltf/prismUI.py)
+    record_origin (rosbag/record)
+
+ROS_MASTER_URI=http://S01:11311
+
+process[Ui_Monitor-1]: started with pid [6077]
+process[record_origin-2]: started with pid [6078]
+[/record_origin]: Subscribing to /leica/robot_to_origin_transform
+[/record_origin]: Subscribing to /leica_node/angles
+[/record_origin]: Subscribing to /leica_node/position
+[/record_origin]: Subscribing to /leica_node/radius
+[/record_origin]: Subscribing to /leica_node/state
+[/record_origin]: Subscribing to /tf
+[/record_origin]: Subscribing to /tf_static
+[/record_origin]: Recording to /home/base/marble_ws/src/absolute_orientation_solver/data/prism_loc_and_tf_2021-06-30-14-05-33.bag.
+Robot Left
+[/Ui_Monitor]: Calculating Robot Left location
+Robot Left
+[/Ui_Monitor]: Setting to prism: micro_360
+[/Ui_Monitor]: Prism set to micro_360
+[/Ui_Monitor]: Starting tracking
+[/Ui_Monitor]: Tracking started
+[2.349, 1.9659, -0.4897]
+[2.349, 1.9659, -0.4897]
+[2.349, 1.9659, -0.4897]
+[2.349, 1.9659, -0.4897]
+[2.3483, 1.9652, -0.4895]
+[2.3483, 1.9652, -0.4895]
+[2.3483, 1.9652, -0.4895]
+[2.349, 1.9659, -0.4897]
+[2.349, 1.9659, -0.4898]
+[2.349, 1.9658, -0.4898]
+[/Ui_Monitor]: Stopping tracking
+[/Ui_Monitor]: Tracking stopped
+[2.34879, 1.96568, -0.48966000000000004]
+Robot Right
+[/Ui_Monitor]: Calculating Robot Right location
+Robot Right
+[/Ui_Monitor]: Setting to prism: micro_360
+[/Ui_Monitor]: Prism set to micro_360
+[/Ui_Monitor]: Starting tracking
+[/Ui_Monitor]: Tracking started
+[2.3587, 1.8247, -0.4893]
+[2.3587, 1.8247, -0.4893]
+[2.3588, 1.8246, -0.4893]
+[2.3587, 1.8247, -0.4893]
+[2.358, 1.8242, -0.4885]
+[2.3581, 1.8241, -0.4885]
+[2.358, 1.8241, -0.4891]
+[2.358, 1.8241, -0.489]
+[2.358, 1.8241, -0.4891]
+[2.358, 1.8241, -0.489]
+[/Ui_Monitor]: Stopping tracking
+[/Ui_Monitor]: Tracking stopped
+[2.3583000000000003, 1.82434, -0.48904]
+Robot Top
+[/Ui_Monitor]: Calculating Robot Top location
+Robot Top
+[/Ui_Monitor]: Setting to prism: micro_360
+[/Ui_Monitor]: Prism set to micro_360
+[/Ui_Monitor]: Starting tracking
+[/Ui_Monitor]: Tracking started
+[2.497, 1.8329, -0.49]
+[2.497, 1.8329, -0.49]
+[2.497, 1.8329, -0.49]
+[2.497, 1.8329, -0.49]
+[2.497, 1.8329, -0.49]
+[2.497, 1.8329, -0.49]
+[2.497, 1.8329, -0.4899]
+[2.497, 1.8329, -0.4899]
+[2.497, 1.8329, -0.4899]
+[2.497, 1.8329, -0.4901]
+[/Ui_Monitor]: Stopping tracking
+[/Ui_Monitor]: Tracking stopped
+[2.497, 1.8329, -0.4899800000000001]
+[/Ui_Monitor]: Calculaing Robot->Leica
+v1 = [[-0.045, 0.100025, 0.01074], [0.045, -0.100025, 0.01074], [-0.045, -0.100025, 0.01074]]
+v2 = [[2.34879, 1.96568, -0.48966000000000004], [2.497, 1.8329, -0.4899800000000001], [2.3583000000000003, 1.82434, -0.48904]]
+scale = 0.9058809548803787
+Calculated Error: 29.092349007901472
+Solution:  [[ 0.96952965 -0.24488828  0.00647938  2.40707797]
+ [ 0.24486028  0.96954638  0.0048224   1.90687074]
+ [-0.00746301 -0.00308892  0.99996738 -0.49948355]
+ [ 0.          0.          0.          1.        ]]
+[/Ui_Monitor]: Robot->Leica:
+[ 2.40707797  1.90687074 -0.49948355], [-0.1770771821237354, 0.42781963865360434, 14.18116910915476]
+Gate Left
+[/Ui_Monitor]: Calculating Gate Left location
+Gate Left
+[/Ui_Monitor]: Setting to prism: micro_360
+[/Ui_Monitor]: Prism set to micro_360
+[/Ui_Monitor]: Starting tracking
+[/Ui_Monitor]: Tracking started
+[1.3451, 2.5825, -0.4066]
+[1.3451, 2.5825, -0.4066]
+[1.3451, 2.5825, -0.4066]
+[1.3451, 2.5825, -0.4066]
+[1.3446, 2.5816, -0.4065]
+[1.3445, 2.5816, -0.4065]
+[1.3451, 2.5825, -0.4066]
+[1.345, 2.5825, -0.4066]
+[1.345, 2.5825, -0.4066]
+[1.3449, 2.5825, -0.4065]
+[/Ui_Monitor]: Stopping tracking
+[/Ui_Monitor]: Tracking stopped
+[1.34495, 2.58232, -0.40657000000000004]
+Gate Right
+[/Ui_Monitor]: Calculating Gate Right location
+Gate Right
+[/Ui_Monitor]: Setting to prism: micro_360
+[/Ui_Monitor]: Prism set to micro_360
+[/Ui_Monitor]: Starting tracking
+[/Ui_Monitor]: Tracking started
+[1.3457, 2.4425, -0.4056]
+[1.3462, 2.4434, -0.4057]
+[1.3461, 2.4434, -0.4057]
+[1.3462, 2.4434, -0.4057]
+[1.3456, 2.4425, -0.4056]
+[1.3461, 2.4434, -0.4057]
+[1.3461, 2.4434, -0.4058]
+[1.3461, 2.4434, -0.4057]
+[1.3461, 2.4434, -0.4057]
+[1.3461, 2.4434, -0.4057]
+[/Ui_Monitor]: Stopping tracking
+[/Ui_Monitor]: Tracking stopped
+[1.34603, 2.44322, -0.40569000000000005]
+Gate Top
+[/Ui_Monitor]: Calculating Gate Top location
+Gate Top
+[/Ui_Monitor]: Setting to prism: micro_360
+[/Ui_Monitor]: Prism set to micro_360
+[/Ui_Monitor]: Starting tracking
+[/Ui_Monitor]: Tracking started
+[1.4854, 2.4455, -0.4064]
+[1.4854, 2.4455, -0.4065]
+[1.4854, 2.4455, -0.4065]
+[1.4854, 2.4455, -0.4065]
+[1.4854, 2.4455, -0.4064]
+[1.4854, 2.4455, -0.4064]
+[1.4854, 2.4455, -0.4064]
+[1.4854, 2.4455, -0.4064]
+[1.4854, 2.4455, -0.4065]
+[1.4854, 2.4455, -0.4065]
+[/Ui_Monitor]: Stopping tracking
+[/Ui_Monitor]: Tracking stopped
+[1.4854, 2.4454999999999996, -0.40645]
+[/Ui_Monitor]: Calculating Gate->Leica
+v1 = [[-0.12481, 0.07318, 0.01524], [0.01489, -0.06652, 0.01524], [-0.12481, -0.06652, 0.01524]]
+v2 = [[1.34495, 2.58232, -0.40657000000000004], [1.4854, 2.4454999999999996, -0.40645], [1.34603, 2.44322, -0.40569000000000005]]
+scale = 0.9946187506333432
+Calculated Error: 25.935413100674445
+Solution:  [[ 0.99990641 -0.01259242  0.00534875  1.46961068]
+ [ 0.01255829  0.99990087  0.00636769  2.51107145]
+ [-0.00542841 -0.00629993  0.99996542 -0.42194161]
+ [ 0.          0.          0.          1.        ]]
+[/Ui_Monitor]: Gate->Leica:
+[ 1.46961068  2.51107145 -0.42194161], [-0.36115000871614056, 0.3111839858990902, 0.719931485976119]
+[/Ui_Monitor]: Robot->Gate:
+[ 0.93021274 -0.61545729 -0.07637234], [0.10175814426456148, 0.04114667976551603, 13.46139793994689]
+[0.0008394043724294109, 0.0004603910877977385, 0.11714334575387633, 0.9931145553187376]
+[/Ui_Monitor]: Stopping tracking
+[/Ui_Monitor]: Tracking stopped
+[Ui_Monitor-1] process has finished cleanly
+log file: /home/base/.ros/log/dc0b3c3c-d9dd-11eb-baaa-309c23903185/Ui_Monitor-1*.log
+^C[record_origin-2] killing on exit
+shutting down processing monitor...
+... shutting down processing monitor complete
+done
+********************************************************************************************************************
+********************************************************************************************************************
+*********************************************************************************************************************
+roslaunch ltf ltf.launch 
+... logging to /home/base/.ros/log/dc0b3c3c-d9dd-11eb-baaa-309c23903185/roslaunch-s02-7055.log
+Checking log directory for disk usage. This may take awhile.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+
+started roslaunch server http://S02:45721/
+
+SUMMARY
+========
+
+PARAMETERS
+ * /rosdistro: melodic
+ * /rosversion: 1.14.3
+
+NODES
+  /
+    Ui_Monitor (ltf/prismUI.py)
+    record_origin (rosbag/record)
+
+ROS_MASTER_URI=http://S01:11311
+
+process[Ui_Monitor-1]: started with pid [7065]
+process[record_origin-2]: started with pid [7066]
+[/record_origin]: Subscribing to /leica/robot_to_origin_transform
+[/record_origin]: Subscribing to /leica_node/angles
+[/record_origin]: Subscribing to /leica_node/position
+[/record_origin]: Subscribing to /leica_node/radius
+[/record_origin]: Subscribing to /leica_node/state
+[/record_origin]: Subscribing to /tf
+[/record_origin]: Subscribing to /tf_static
+[/record_origin]: Recording to /home/base/marble_ws/src/absolute_orientation_solver/data/prism_loc_and_tf_2021-06-30-14-23-26.bag.
+UGV [[-0.12481, 0.07318, -0.0045], [0.01489, -0.06652, -0.0045], [-0.12481, -0.06652, -0.0045]]
+Gate Left
+[/Ui_Monitor]: Calculating Gate Left location
+Gate Left
+[/Ui_Monitor]: Setting to prism: micro_360
+[/Ui_Monitor]: Prism set to micro_360
+[/Ui_Monitor]: Starting tracking
+[/Ui_Monitor]: Tracking started
+[1.3448, 2.5826, -0.4065]
+[1.3448, 2.5826, -0.4065]
+[1.3448, 2.5826, -0.4065]
+[1.3443, 2.5817, -0.4063]
+[1.3443, 2.5817, -0.4063]
+[1.3443, 2.5817, -0.4063]
+[1.3444, 2.5817, -0.4063]
+[1.3448, 2.5826, -0.4065]
+[1.3448, 2.5826, -0.4065]
+[1.3448, 2.5826, -0.4065]
+[/Ui_Monitor]: Stopping tracking
+[/Ui_Monitor]: Tracking stopped
+[1.3446099999999999, 2.5822399999999996, -0.40641999999999995]
+Gate Right
+[/Ui_Monitor]: Calculating Gate Right location
+Gate Right
+[/Ui_Monitor]: Setting to prism: micro_360
+[/Ui_Monitor]: Prism set to micro_360
+[/Ui_Monitor]: Starting tracking
+[/Ui_Monitor]: Tracking started
+[1.346, 2.4435, -0.4057]
+[1.346, 2.4435, -0.4057]
+[1.346, 2.4435, -0.4057]
+[1.346, 2.4435, -0.4057]
+[1.346, 2.4435, -0.4056]
+[1.3455, 2.4426, -0.4055]
+[1.3455, 2.4426, -0.4055]
+[1.3455, 2.4426, -0.4055]
+[1.3455, 2.4426, -0.4055]
+[1.346, 2.4435, -0.4057]
+[/Ui_Monitor]: Stopping tracking
+[/Ui_Monitor]: Tracking stopped
+[1.3457999999999999, 2.4431399999999996, -0.40560999999999997]
+Gate Top
+[/Ui_Monitor]: Calculating Gate Top location
+Gate Top
+[/Ui_Monitor]: Setting to prism: micro_360
+[/Ui_Monitor]: Prism set to micro_360
+[/Ui_Monitor]: Starting tracking
+[/Ui_Monitor]: Tracking started
+[1.4855, 2.4455, -0.4063]
+[1.4855, 2.4455, -0.4063]
+[1.4855, 2.4455, -0.4063]
+[1.4855, 2.4455, -0.4063]
+[1.4855, 2.4455, -0.4063]
+[1.485, 2.4446, -0.4062]
+[1.4855, 2.4455, -0.4063]
+[1.4855, 2.4455, -0.4063]
+[1.4855, 2.4455, -0.4063]
+[1.4855, 2.4455, -0.4063]
+[/Ui_Monitor]: Stopping tracking
+[/Ui_Monitor]: Tracking stopped
+[1.48545, 2.44541, -0.40629]
+[/Ui_Monitor]: Calculating Gate->Leica
+v1 = [[-0.12481, 0.07318, 0.01524], [0.01489, -0.06652, 0.01524], [-0.12481, -0.06652, 0.01524]]
+v2 = [[1.3446099999999999, 2.5822399999999996, -0.40641999999999995], [1.48545, 2.44541, -0.40629], [1.3457999999999999, 2.4431399999999996, -0.40560999999999997]]
+scale = 0.9958449905231371
+Calculated Error: 25.93319884613163
+Solution:  [[ 0.99989833 -0.01343651  0.00477386  1.4695242 ]
+ [ 0.01340844  0.99989291  0.00586382  2.5110874 ]
+ [-0.00485214 -0.00579922  0.99997141 -0.42177621]
+ [ 0.          0.          0.          1.        ]]
+[/Ui_Monitor]: Gate->Leica:
+[ 1.4695242   2.5110874  -0.42177621], [-0.3324449389276132, 0.2781491893078761, 0.7686689106326112]
+roslaunch ltf ltf.launch 
+... logging to /home/base/.ros/log/dc0b3c3c-d9dd-11eb-baaa-309c23903185/roslaunch-s02-6068.log
+Checking log directory for disk usage. This may take awhile.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+
+started roslaunch server http://S02:36377/
+
+SUMMARY
+========
+
+PARAMETERS
+ * /rosdistro: melodic
+ * /rosversion: 1.14.3
+
+NODES
+  /
+    Ui_Monitor (ltf/prismUI.py)
+    record_origin (rosbag/record)
+
+ROS_MASTER_URI=http://S01:11311
+
+process[Ui_Monitor-1]: started with pid [6077]
+process[record_origin-2]: started with pid [6078]
+[/record_origin]: Subscribing to /leica/robot_to_origin_transform
+[/record_origin]: Subscribing to /leica_node/angles
+[/record_origin]: Subscribing to /leica_node/position
+[/record_origin]: Subscribing to /leica_node/radius
+[/record_origin]: Subscribing to /leica_node/state
+[/record_origin]: Subscribing to /tf
+[/record_origin]: Subscribing to /tf_static
+[/record_origin]: Recording to /home/base/marble_ws/src/absolute_orientation_solver/data/prism_loc_and_tf_2021-06-30-14-05-33.bag.
+Robot Left
+[/Ui_Monitor]: Calculating Robot Left location
+Robot Left
+[/Ui_Monitor]: Setting to prism: micro_360
+[/Ui_Monitor]: Prism set to micro_360
+[/Ui_Monitor]: Starting tracking
+[/Ui_Monitor]: Tracking started
+[2.349, 1.9659, -0.4897]
+[2.349, 1.9659, -0.4897]
+[2.349, 1.9659, -0.4897]
+[2.349, 1.9659, -0.4897]
+[2.3483, 1.9652, -0.4895]
+[2.3483, 1.9652, -0.4895]
+[2.3483, 1.9652, -0.4895]
+[2.349, 1.9659, -0.4897]
+[2.349, 1.9659, -0.4898]
+[2.349, 1.9658, -0.4898]
+[/Ui_Monitor]: Stopping tracking
+[/Ui_Monitor]: Tracking stopped
+[2.34879, 1.96568, -0.48966000000000004]
+Robot Right
+[/Ui_Monitor]: Calculating Robot Right location
+Robot Right
+[/Ui_Monitor]: Setting to prism: micro_360
+[/Ui_Monitor]: Prism set to micro_360
+[/Ui_Monitor]: Starting tracking
+[/Ui_Monitor]: Tracking started
+[2.3587, 1.8247, -0.4893]
+[2.3587, 1.8247, -0.4893]
+[2.3588, 1.8246, -0.4893]
+[2.3587, 1.8247, -0.4893]
+[2.358, 1.8242, -0.4885]
+[2.3581, 1.8241, -0.4885]
+[2.358, 1.8241, -0.4891]
+[2.358, 1.8241, -0.489]
+[2.358, 1.8241, -0.4891]
+[2.358, 1.8241, -0.489]
+[/Ui_Monitor]: Stopping tracking
+[/Ui_Monitor]: Tracking stopped
+[2.3583000000000003, 1.82434, -0.48904]
+Robot Top
+[/Ui_Monitor]: Calculating Robot Top location
+Robot Top
+[/Ui_Monitor]: Setting to prism: micro_360
+[/Ui_Monitor]: Prism set to micro_360
+[/Ui_Monitor]: Starting tracking
+[/Ui_Monitor]: Tracking started
+[2.497, 1.8329, -0.49]
+[2.497, 1.8329, -0.49]
+[2.497, 1.8329, -0.49]
+[2.497, 1.8329, -0.49]
+[2.497, 1.8329, -0.49]
+[2.497, 1.8329, -0.49]
+[2.497, 1.8329, -0.4899]
+[2.497, 1.8329, -0.4899]
+[2.497, 1.8329, -0.4899]
+[2.497, 1.8329, -0.4901]
+[/Ui_Monitor]: Stopping tracking
+[/Ui_Monitor]: Tracking stopped
+[2.497, 1.8329, -0.4899800000000001]
+[/Ui_Monitor]: Calculaing Robot->Leica
+v1 = [[-0.045, 0.100025, 0.01074], [0.045, -0.100025, 0.01074], [-0.045, -0.100025, 0.01074]]
+v2 = [[2.34879, 1.96568, -0.48966000000000004], [2.497, 1.8329, -0.4899800000000001], [2.3583000000000003, 1.82434, -0.48904]]
+scale = 0.9058809548803787
+Calculated Error: 29.092349007901472
+Solution:  [[ 0.96952965 -0.24488828  0.00647938  2.40707797]
+ [ 0.24486028  0.96954638  0.0048224   1.90687074]
+ [-0.00746301 -0.00308892  0.99996738 -0.49948355]
+ [ 0.          0.          0.          1.        ]]
+[/Ui_Monitor]: Robot->Leica:
+[ 2.40707797  1.90687074 -0.49948355], [-0.1770771821237354, 0.42781963865360434, 14.18116910915476]
+Gate Left
+[/Ui_Monitor]: Calculating Gate Left location
+Gate Left
+[/Ui_Monitor]: Setting to prism: micro_360
+[/Ui_Monitor]: Prism set to micro_360
+[/Ui_Monitor]: Starting tracking
+[/Ui_Monitor]: Tracking started
+[1.3451, 2.5825, -0.4066]
+[1.3451, 2.5825, -0.4066]
+[1.3451, 2.5825, -0.4066]
+[1.3451, 2.5825, -0.4066]
+[1.3446, 2.5816, -0.4065]
+[1.3445, 2.5816, -0.4065]
+[1.3451, 2.5825, -0.4066]
+[1.345, 2.5825, -0.4066]
+[1.345, 2.5825, -0.4066]
+[1.3449, 2.5825, -0.4065]
+[/Ui_Monitor]: Stopping tracking
+[/Ui_Monitor]: Tracking stopped
+[1.34495, 2.58232, -0.40657000000000004]
+Gate Right
+[/Ui_Monitor]: Calculating Gate Right location
+Gate Right
+[/Ui_Robot Left
+[/Ui_Monitor]: Calculating Robot Left location
+Robot Left
+[/Ui_Monitor]: Setting to prism: micro_360
+[/Ui_Monitor]: Prism set to micro_360
+[/Ui_Monitor]: Starting tracking
+[/Ui_Monitor]: Tracking started
+[2.3538, 1.9648, -0.4901]
+[2.3538, 1.9648, -0.4901]
+[2.3538, 1.9648, -0.4901]
+[2.3538, 1.9648, -0.4901]
+[2.3538, 1.9648, -0.4901]
+[2.3538, 1.9648, -0.4901]
+[2.3538, 1.9648, -0.4901]
+[2.3538, 1.9648, -0.4901]
+[2.3538, 1.9648, -0.4901]
+[2.3538, 1.9648, -0.4901]
+[/Ui_Monitor]: Stopping tracking
+[/Ui_Monitor]: Tracking stopped
+[2.3538, 1.9647999999999999, -0.4901]
+Robot Right
+[/Ui_Monitor]: Calculating Robot Right location
+Robot Right
+[/Ui_Monitor]: Setting to prism: micro_360
+[/Ui_Monitor]: Prism set to micro_360
+[/Ui_Monitor]: Starting tracking
+[/Ui_Monitor]: Tracking started
+[/Ui_Monitor]: Service call failed: timeout exceeded while waiting for message on topic leica_node/position
+[/Ui_Monitor]: Cannot get pos from Leica. Trying again (1/2 attempts left).
+[/Ui_Monitor]: Possible causes: 
+- target prism appears too close to another prism
+[/Ui_Monitor]: Service call failed: timeout exceeded while waiting for message on topic leica_node/position
+[/Ui_Monitor]: Cannot get pos from Leica. Aborting.
+[/Ui_Monitor]: Stopping tracking
+[/Ui_Monitor]: Tracking stopped
+[0.0, 0.0, 0.0]
+Robot Right
+[/Ui_Monitor]: Calculating Robot Right location
+Robot Right
+[/Ui_Monitor]: Setting to prism: micro_360
+[/Ui_Monitor]: Prism set to micro_360
+[/Ui_Monitor]: Starting tracking
+[/Ui_Monitor]: Tracking started
+[/Ui_Monitor]: Service call failed: timeout exceeded while waiting for message on topic leica_node/position
+[/Ui_Monitor]: Cannot get pos from Leica. Trying again (1/2 attempts left).
+[/Ui_Monitor]: Possible causes: 
+- target prism appears too close to another prism
+[/Ui_Monitor]: Service call failed: timeout exceeded while waiting for message on topic leica_node/position
+[/Ui_Monitor]: Cannot get pos from Leica. Aborting.
+[/Ui_Monitor]: Stopping tracking
+[/Ui_Monitor]: Tracking stopped
+[0.0, 0.0, 0.0]
+Robot Right
+[/Ui_Monitor]: Calculating Robot Right location
+Robot Right
+[/Ui_Monitor]: Setting to prism: micro_360
+[/Ui_Monitor]: Prism set to micro_360
+[/Ui_Monitor]: Starting tracking
+[/Ui_Monitor]: Tracking started
+[/Ui_Monitor]: Service call failed: timeout exceeded while waiting for message on topic leica_node/position
+[/Ui_Monitor]: Cannot get pos from Leica. Trying again (1/2 attempts left).
+[/Ui_Monitor]: Possible causes: 
+- target prism appears too close to another prism
+[/Ui_Monitor]: Service call failed: timeout exceeded while waiting for message on topic leica_node/position
+[/Ui_Monitor]: Cannot get pos from Leica. Aborting.
+[/Ui_Monitor]: Stopping tracking
+[/Ui_Monitor]: Tracking stopped
+[0.0, 0.0, 0.0]
+Robot Right
+[/Ui_Monitor]: Calculating Robot Right location
+Robot Right
+[/Ui_Monitor]: Setting to prism: micro_360
+[/Ui_Monitor]: Prism set to micro_360
+[/Ui_Monitor]: Starting tracking
+[/Ui_Monitor]: Tracking started
+[/Ui_Monitor]: Service call failed: timeout exceeded while waiting for message on topic leica_node/position
+[/Ui_Monitor]: Cannot get pos from Leica. Trying again (1/2 attempts left).
+[/Ui_Monitor]: Possible causes: 
+- target prism appears too close to another prism
+[/Ui_Monitor]: Service call failed: timeout exceeded while waiting for message on topic leica_node/position
+[/Ui_Monitor]: Cannot get pos from Leica. Aborting.
+[/Ui_Monitor]: Stopping tracking
+[/Ui_Monitor]: Tracking stopped
+[0.0, 0.0, 0.0]
+Robot Top
+[/Ui_Monitor]: Calculating Robot Top location
+Robot Top
+[/Ui_Monitor]: Setting to prism: micro_360
+[/Ui_Monitor]: Prism set to micro_360
+[/Ui_Monitor]: Starting tracking
+[/Ui_Monitor]: Tracking started
+[2.501, 1.8341, -0.4904]
+[2.5011, 1.8341, -0.4904]
+[2.501, 1.8341, -0.4904]
+[2.501, 1.8341, -0.4904]
+[2.5002, 1.8335, -0.4902]
+[2.5003, 1.8334, -0.4902]
+[2.5003, 1.8334, -0.4902]
+[2.5003, 1.8334, -0.4902]
+[2.5003, 1.8334, -0.4902]
+[2.5003, 1.8334, -0.4902]
+[/Ui_Monitor]: Stopping tracking
+[/Ui_Monitor]: Tracking stopped
+[2.50058, 1.83369, -0.49028]
+Robot Right
+[/Ui_Monitor]: Calculating Robot Right location
+Robot Right
+[/Ui_Monitor]: Setting to prism: micro_360
+[/Ui_Monitor]: Prism set to micro_360
+[/Ui_Monitor]: Starting tracking
+[/Ui_Monitor]: Tracking started
+[2.3608, 1.8256, -0.4883]
+[2.3609, 1.8255, -0.4883]
+[2.3608, 1.8256, -0.4883]
+[2.3616, 1.8262, -0.4884]
+[2.3616, 1.8262, -0.4884]
+[2.3608, 1.8256, -0.4883]
+[2.3609, 1.8255, -0.4883]
+[2.3616, 1.8262, -0.4884]
+[2.3616, 1.8262, -0.4884]
+[2.3616, 1.8262, -0.4884]
+[/Ui_Monitor]: Stopping tracking
+[/Ui_Monitor]: Tracking stopped
+[2.3612199999999994, 1.8258800000000002, -0.48835000000000006]
+[/Ui_Monitor]: Calculaing Robot->Leica
+v1 = [[-0.12481, 0.07318, 0.01074], [0.01489, -0.06652, 0.01074], [-0.12481, -0.06652, 0.01074]]
+v2 = [[2.3538, 1.9647999999999999, -0.4901], [2.50058, 1.83369, -0.49028], [2.3612199999999994, 1.8258800000000002, -0.48835000000000006]]
+scale = 0.9968738994059348
+Calculated Error: 30.054392089350543
+Solution:  [[ 0.99836942 -0.05555949  0.01310155  2.48182615]
+ [ 0.05538542  0.99837653  0.01329476  1.89882632]
+ [-0.01381893 -0.01254745  0.99982578 -0.50160867]
+ [ 0.          0.          0.          1.        ]]
+[/Ui_Monitor]: Robot->Leica:
+[ 2.48182615  1.89882632 -0.50160867], [-0.7193681997706884, 0.7921930538705607, 3.1768894311286737]
+[/Ui_Monitor]: Robot->Gate:
+[ 1.00437692 -0.62533436 -0.07858777], [-0.39888594860713655, 0.500319548136477, 2.411026906523738]
+[-0.0035701255029249707, 0.004289734065422498, 0.021042814305992467, 0.9997629980908599]
+
+
+
+[/Ui_Monitor]: Resetting Robot
+[/Ui_Monitor]: Stopping tracking
+[/Ui_Monitor]: Tracking stopped
+Robot Left
+[/Ui_Monitor]: Calculating Robot Left location
+Robot Left
+[/Ui_Monitor]: Setting to prism: micro_360
+[/Ui_Monitor]: Prism set to micro_360
+[/Ui_Monitor]: Starting tracking
+[/Ui_Monitor]: Tracking started
+[2.1453, 1.2498, -0.7853]
+[2.1453, 1.2497, -0.7853]
+[2.1453, 1.2497, -0.7853]
+[2.1453, 1.2497, -0.7853]
+[2.1452, 1.2496, -0.7856]
+[2.1452, 1.2496, -0.7856]
+[2.1453, 1.2496, -0.7854]
+[2.1462, 1.2501, -0.7856]
+[2.1462, 1.2501, -0.7856]
+[2.1461, 1.2501, -0.7857]
+[/Ui_Monitor]: Stopping tracking
+[/Ui_Monitor]: Tracking stopped
+[2.14554, 1.2498, -0.7854699999999999]
+Robot Right
+[/Ui_Monitor]: Calculating Robot Right location
+Robot Right
+[/Ui_Monitor]: Setting to prism: micro_360
+[/Ui_Monitor]: Prism set to micro_360
+[/Ui_Monitor]: Starting tracking
+[/Ui_Monitor]: Tracking started
+[2.1502, 1.1099, -0.7853]
+[2.1502, 1.1099, -0.7853]
+[2.1502, 1.1098, -0.7853]
+[2.1494, 1.1095, -0.785]
+[2.1493, 1.1095, -0.785]
+[2.1493, 1.1095, -0.785]
+[2.1494, 1.1095, -0.7849]
+[2.1493, 1.1095, -0.7849]
+[2.1494, 1.1095, -0.7848]
+[2.1494, 1.1095, -0.7848]
+[/Ui_Monitor]: Stopping tracking
+[/Ui_Monitor]: Tracking stopped
+[2.14961, 1.10961, -0.7850300000000001]
+Robot Top
+[/Ui_Monitor]: Calculating Robot Top location
+Robot Top
+[/Ui_Monitor]: Setting to prism: micro_360
+[/Ui_Monitor]: Prism set to micro_360
+[/Ui_Monitor]: Starting tracking
+[/Ui_Monitor]: Tracking started
+[2.2888, 1.1159, -0.7796]
+[2.2888, 1.1159, -0.7796]
+[2.2888, 1.1159, -0.7796]
+[2.2879, 1.1155, -0.7793]
+[2.2879, 1.1156, -0.7793]
+[2.2888, 1.1159, -0.7796]
+[2.2888, 1.116, -0.7796]
+[2.2888, 1.1159, -0.7796]
+[2.2888, 1.1159, -0.7796]
+[2.2888, 1.1159, -0.7796]
+[/Ui_Monitor]: Stopping tracking
+[/Ui_Monitor]: Tracking stopped
+[2.2886200000000008, 1.11584, -0.7795400000000001]
+[/Ui_Monitor]: Calculaing Robot->Leica
+v1 = [[-0.12481, 0.07318, 0.02598], [0.01489, -0.06652, 0.02598], [-0.12481, -0.06652, 0.02598]]
+v2 = [[2.14554, 1.2498, -0.7854699999999999], [2.2886200000000008, 1.11584, -0.7795400000000001], [2.14961, 1.10961, -0.7850300000000001]]
+scale = 0.9964755421030977
+Calculated Error: 21.635270038305386
+Solution:  [[ 9.98603794e-01 -3.50161099e-02 -3.95516711e-02  2.27277641e+00]
+ [ 3.51220980e-02  9.99381052e-01  1.98787032e-03  1.18097429e+00]
+ [ 3.94575832e-02 -3.37423251e-03  9.99215549e-01 -8.06205471e-01]
+ [ 0.00000000e+00  0.00000000e+00  0.00000000e+00  1.00000000e+00]]
+[/Ui_Monitor]: Robot->Leica:
+[ 2.27277641  1.18097429 -0.80620547], [-0.19357845907453006, -2.2624870086605178, 2.0153529516429227]
+D01
+[/Ui_Monitor]: Robot->Gate:
+[ 0.7872011  -1.33853419 -0.3883832 ], [0.13306181437116593, -2.5477584561642588, 1.2321769113248955]
+\
+[0.0013990446818323411, -0.022206518316059062, 0.010770240486114893, 0.9996944108767077]
